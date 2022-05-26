@@ -110,7 +110,7 @@ mov_ship:
 	JZ MOVE_LEFT;
 	CMP R0, RIGHT;
 	JZ MOVE_RIGHT;
-	JMP NAVE_END
+	JMP SHIP_END
 
 MOVE_RIGHT:
 	MOV R7, 1			
@@ -127,16 +127,16 @@ MOVE:
 	;CALL test_limits
 	MOV R7, [CHANGE_COL]
 	CMP R7, 0
-	JZ NAVE_END
-	CALL erase_object		; apaga o boneco
-	ADD R2, R7			; adiciona o incremento a coluna para indicar a nova coluna onde comeca
-	ADD R8, 1			;
-	MOVB [R8], R2			; muda a coluna onde o objeto esta
-	CALL draw_object		; desenha a nova posicao do objeto
+	JZ SHIP_END
+	CALL erase_object		; Deletes object from current position
+	ADD R2, R7			; Adds column variation to the new reference position of ship
+	ADD R8, 1
+	MOVB [R8], R2			; Changes column
+	CALL draw_object		; Draws object in new position
 	CALL delay			;
 	
 
-NAVE_END:
+SHIP_END:
 	POP R9
 	POP R8
 	POP R7
@@ -163,7 +163,7 @@ erase_object:
 
 draw_object:
 	PUSH R6
-	MOV R6 , PEN
+	MOV R6, PEN
 	MOV [PEN_MODE], R6 
 	CALL write_object
 	POP R6
@@ -171,14 +171,14 @@ draw_object:
 
 	
 ;******************************************************************************************
-;* Obtem enderecos
+;* SHIP POSITION REFERENCE
 ;******************************************************************************************	
 
 placement:
 	PUSH R8
-	MOVB R1, [R8]			; R1 guarda linha
-	ADD R8, 1			; Obtem endereço da coluna 
-	MOVB R2, [R8]			; R2 stores the column
+	MOVB R1, [R8]			; R1 stores line
+	ADD R8, 1			; Gets column adress (second byte of R8)
+	MOVB R2, [R8]			; R2 stores column
 	POP R8
 	RET
 	
@@ -268,20 +268,20 @@ escreve_pixel:
 
 
 keypad:
-	PUSH R0				; Locks R0 value	
-	PUSH R1				; Locks R1 value
-	PUSH R2				; Locks R2 value
-	PUSH R3				; Locks R3 value
-	PUSH R4				; Locks R4 value
+	PUSH R0	
+	PUSH R1
+	PUSH R2
+	PUSH R3
+	PUSH R4
 	MOV R1, LINE     	 	; First line to test 
  	MOV R2, KEY_LIN			; Keypad input in R2
 	MOV R3, KEY_COL			; Keypad output in R3
 
 check_keypad:				; Checks if there is a pressed button
-   	MOVB [R2], R1      		; Injects Line in Keypad Lines
-   	MOVB R0, [R3]      		; Reads from Keypad Colums
-   	MOV  R4, KEY_MASK		; Loads Keypad Mask to
-  	AND  R0, R4   			; Isolates the Lower Nibble
+   	MOVB [R2], R1      		; Injects line in keypad lines
+   	MOVB R0, [R3]      		; Reads from keypad columns
+   	MOV  R4, KEY_MASK		; Loads keypad mask to R4
+  	AND  R0, R4   			; Isolates the lower nibble
   	JZ wait_button    		; Jumps if no button is pressed in that line
    	CALL button_calc		; Calls the process that calculates the button pressed
   	JMP keypad_end			; Jumps to the end
@@ -324,18 +324,18 @@ calc_col:				; Determines which column is being pressed (0-3)
 
 button_calc_end:	
 	CALL button_formula		; Calculates the button that is being pressed
-	MOV R3, [BUTTON]		;
-	MOV [LAST_BUTTON], R3		; 
+	MOV R3, [BUTTON]
+	MOV [LAST_BUTTON], R3
 	MOV [BUTTON], R2		; Stores button pressed address in R0
 	RET
 
 
 ;***********************************************************************************
-;*CALCULA BOTAO EM R2 
+;*PRESSED BUTTON CALCULATOR (R2)
 ;***********************************************************************************
 
 button_formula:
-	MOV R0, 4			;
+	MOV R0, 4
 	MUL R2, R0			; Multiples the line counter by 4 
 	ADD R2, R3			; Adds the column counter to calculate the button pressed
 	RET

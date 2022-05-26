@@ -1,4 +1,6 @@
-
+; TIAGO: criar o layout da nave, criar as várias cores nas constantes SPACESHIP
+; PEDRO: mudar o background horroroso, limites do ecrã, delay
+; JOHNY: traduzir títulos e comentários do write/erase pixels, relatório
 
 ;****KEYPAD****************************************************************************
 INJECTED_LINE 	EQU 8			; Fourth keypad line

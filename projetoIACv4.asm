@@ -30,16 +30,16 @@ SELECT_BACKGROUND 	EQU 6042H	; endereço do comando para selecionar uma imagem d
 ;***DISPLAY*****************************************************************************************************
 MIN_COLUNA		EQU 0		; número da coluna mais à esquerda que o objeto pode ocupar
 MAX_COLUNA		EQU 63        	; número da coluna mais à direita que o objeto pode ocupar
-ATRASO			EQU 400H	; atraso para limitar a velocidade de movimento do boneco
+DELAY			EQU 400H	; atraso para limitar a velocidade de movimento do boneco
 PEN			EQU 1H
 ERASER			EQU 0H
 MOV_TIMER		EQU 0FFFH
 
 ;***SPACESHIP***************************************************************************************************
-LINHA        		EQU 16        	; linha do boneco (a meio do ecrã))
-COLUNA			EQU 30        	; coluna do boneco (a meio do ecrã)
-LARGURA			EQU 5		; largura do boneco
-ALTURA			EQU 2		; altura do boneco
+LINE        		EQU 16        	; linha do boneco (a meio do ecrã))
+COLUMN			EQU 30        	; coluna do boneco (a meio do ecrã)
+WIDTH			EQU 5		; largura do boneco
+HEIGHT			EQU 2		; altura do boneco
 COR_PIXEL		EQU 0FF00H	; cor do pixel: vermelho em ARGB (opaco e vermelho no máximo, verde e azul a 0)
 
 ;****************************************************************************************************************
@@ -50,8 +50,8 @@ STACK 100H				; Espaço reservado para a pilha
 
 STACK_INIT:
 
-DEF_NAVE:				; tabela que define o boneco (cor, largura, pixels)
-	WORD ALTURA,LARGURA
+DEF_SHIP:				; tabela que define o boneco (cor, largura, pixels)
+	WORD HEIGHT, WIDTH
 	WORD COR_PIXEL, 0, COR_PIXEL, 0, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL		
 	
 SHIP_PLACE:				; Reference to the position of ship
@@ -66,7 +66,6 @@ CHANGE_COL:
 CHANGE_LINE:
 	WORD 0H
 
-
 PLACE 0H
 
 
@@ -79,10 +78,10 @@ Initializer:
 
 Obtem_nave:
 	MOV R8, SHIP_PLACE		; recebe o a linha e coluna em que a nave se encontra(0-7 bits para coluna , 8-15 bits para linha)
-	MOV R9, DEF_NAVE 		; Recebe formato do boneco
+	MOV R9, DEF_SHIP 		; Recebe formato do boneco
 	CALL placement			; Calcula e guarda valores da linha e coluna em R1 E R2 respetivamente
-	CALL apaga_boneco		; Apaga o boneco do display
-	CALL desenha_boneco		; Desenha boneco
+	CALL delete_object		; Apaga o boneco do display
+	CALL draw_object		; Desenha boneco
 
 MAIN_CYCLE:
 	CALL keypad
@@ -96,7 +95,7 @@ COMMANDS:
 
 METEOROS:
 	RET
-					;MOVIMENTOS EM RELACAO A NAVE
+					; MOVIMENTOS EM RELACAO A NAVE
 
 
 ;********************************************************************************************************
@@ -126,17 +125,17 @@ MOVE_LEFT:
 	JMP MOVE
 	
 MOVE:
-	CALL Placement
+	CALL placement
 	;CALL TESTA_LIMITES
 	MOV R7, [CHANGE_COL]
 	CMP R7, 0
 	JZ NAVE_END
-	CALL apaga_boneco		; apaga o boneco
+	CALL delete_object		; apaga o boneco
 	ADD R2, R7			; adiciona o incremento a coluna para indicar a nova coluna onde comeca
 	ADD R8, 1			;
 	MOVB [R8], R2			; muda a coluna onde o objeto esta
-	CALL desenha_boneco		; desenha a nova posicao do objeto
-	CALL atraso			;
+	CALL draw_object		; desenha a nova posicao do objeto
+	CALL delay			;
 	
 
 NAVE_END:
@@ -148,27 +147,27 @@ NAVE_END:
 
 	
 ;**********************************************************************************************
-;* APAGA BONECOS
+;* DELETE OBJECTS
 ;**********************************************************************************************
 
-apaga_boneco:
+delete_object:
 	PUSH R6
 	MOV R6, ERASER
 	MOV [PEN_MODE], R6
-	CALL escreve_boneco
+	CALL write_object
 	POP R6
 	RET
 
 
 ;**************************************************************************************
-;*Desenha Bonecos
+;*DRAW OBJECTS
 ;**************************************************************************************	
 
-desenha_boneco:
+draw_object:
 	PUSH R6
 	MOV R6 , PEN
 	MOV [PEN_MODE], R6 
-	CALL escreve_boneco
+	CALL write_object
 	POP R6
 	RET
 
@@ -190,7 +189,7 @@ placement:
 ;*Escreve pixel LINHA
 ;*******************************************************************************************
 
-escreve_boneco:
+write_object:
 	PUSH R0
 	PUSH R1
 	PUSH R3
@@ -208,9 +207,9 @@ escreve_linha:				; escreve linha de pixeis
 	JMP escreve_linha		; repete escrita da linha até altura ser 0
 	
 end_RWpixeis:
-	POP R9				;Devolve valor do OBJETO
+	POP R9				; Devolve valor do OBJETO
 	POP R3
-	POP R1				;Devolve valor da Linha
+	POP R1				; Devolve valor da Linha
 	POP R0
 	RET
 
@@ -249,7 +248,6 @@ escolhe_cor:
 end_cor:
 	POP R6
 	RET				; END routine
-   
    
     
 escreve_pixel:
@@ -345,15 +343,15 @@ button_formula:
 	RET
 	
 ;***************************************************************************************
-;*CICLO DE ATRASO
+;*DELAY CYCLE
 ;***************************************************************************************	
 
-atraso:
+delay:
 	PUSH R11
 	MOV R11, MOV_TIMER
 	
-ciclo_atraso:
+delay_cicle:
 	SUB R11, 1
-	JNZ ciclo_atraso
+	JNZ delay_cicle
 	POP R11
 	RET

@@ -5,26 +5,26 @@ LINE 		EQU 8		; Fourth keypad line
 KEY_LIN 	EQU 0C000H	; Keyboard Rows
 KEY_COL 	EQU 0E000H	; Keyboard Columns
 KEY_MASK	EQU 0FH		; Isolates the lower nibble from the output of the keypad
-BUTTON		EQU 0900H   ; Memory address that stores the pressed button
+BUTTON		EQU 0900H   	; Memory address that stores the pressed button
 LAST_BUTTON EQU 0902H
 ;**************************************************************************************
 
 ;****KEYPAD COMMANDS*******************************************************************
 START		EQU	0CH		; Start game
 PAUSE		EQU	0DH		; Pause game
-END			EQU	0EH		; End game
+END		EQU	0EH		; End game
 LEFT		EQU	00H		; Move ship left
 RIGHT		EQU	02H		; Move ship right
 SHOOT		EQU	01H		; Shoot missile
 ;**************************************************************************************
 
 ;***MEDIA CENTER COMMANDS**************************************************************
-DEF_LINE    	  EQU 600AH      ; endereço do comando para definir a linha
-DEF_COL   		  EQU 600CH      ; endereço do comando para definir a coluna
-DEF_PIXEL    	  EQU 6012H      ; endereço do comando para escrever um pixel
-DEL_WARNING       EQU 6040H      ; endereço do comando para apagar o aviso de nenhum cenário selecionado
-DEL_SCREEN	 	  EQU 6002H      ; endereço do comando para apagar todos os pixels já desenhados
-SELECT_BACKGROUND EQU 6042H      ; endereço do comando para selecionar uma imagem de fundo
+DEF_LINE    		EQU 600AH      ; endereço do comando para definir a linha
+DEF_COL  		EQU 600CH      ; endereço do comando para definir a coluna
+DEF_PIXEL    		EQU 6012H      ; endereço do comando para escrever um pixel
+DEL_WARNING     	EQU 6040H      ; endereço do comando para apagar o aviso de nenhum cenário selecionado
+DEL_SCREEN		EQU 6002H      ; endereço do comando para apagar todos os pixels já desenhados
+SELECT_BACKGROUND 	EQU 6042H      ; endereço do comando para selecionar uma imagem de fundo
 ;**************************************************************************************************************
 
 ;***DISPLAY*****************************************************************************************************

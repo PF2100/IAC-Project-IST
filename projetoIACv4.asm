@@ -19,27 +19,27 @@ SHOOT		EQU	01H		; Shoot missile
 
 
 ;***MEDIA CENTER COMMANDS**************************************************************
-DEF_LINE    		EQU 600AH	; endereço do comando para definir a linha
-DEF_COL  		EQU 600CH	; endereço do comando para definir a coluna
-DEF_PIXEL    		EQU 6012H	; endereço do comando para escrever um pixel
-DEL_WARNING     	EQU 6040H	; endereço do comando para apagar o aviso de nenhum cenário selecionado
-DEL_SCREEN		EQU 6002H	; endereço do comando para apagar todos os pixels já desenhados
-SELECT_BACKGROUND 	EQU 6042H	; endereço do comando para selecionar uma imagem de fundo
+DEF_LINE    		EQU 600AH	; Define line command adress 
+DEF_COL  		EQU 600CH	; Define column command adress
+DEF_PIXEL    		EQU 6012H	; Write pixel command adress
+DEL_WARNING     	EQU 6040H	; Ignore no background warning command adress
+DEL_SCREEN		EQU 6002H	; Delete all pixels drawn command adress
+SELECT_BACKGROUND 	EQU 6042H	; Select background command adress
 
 
 ;***DISPLAY*****************************************************************************************************
-MIN_COLUNA		EQU 0		; número da coluna mais à esquerda que o objeto pode ocupar
-MAX_COLUNA		EQU 63        	; número da coluna mais à direita que o objeto pode ocupar
-DELAY			EQU 400H	; atraso para limitar a velocidade de movimento do boneco
-PEN			EQU 1H
-ERASER			EQU 0H
+MIN_COLUMN		EQU 0		; Leftmost column that the object can fill
+MAX_COLUMN		EQU 63        	; Rightmost column that the object can fill
+DELAY			EQU 400H	; Delay used to speed down the movement of the ship
+PEN			EQU 1H		; Flag used to write pixels
+ERASER			EQU 0H		; Flag used to erase pixels
 MOV_TIMER		EQU 0FFFH
 
 ;***SPACESHIP***************************************************************************************************
-LINE        		EQU 16        	; linha do boneco (a meio do ecrã))
-COLUMN			EQU 30        	; coluna do boneco (a meio do ecrã)
-WIDTH			EQU 5		; largura do boneco
-HEIGHT			EQU 2		; altura do boneco
+LINE        		EQU 16        	; Ship initial line (middle of screen)
+COLUMN			EQU 30        	; Ship initial column (middle of screen)
+WIDTH			EQU 5		;
+HEIGHT			EQU 2		; 
 COR_PIXEL		EQU 0FF00H	; cor do pixel: vermelho em ARGB (opaco e vermelho no máximo, verde e azul a 0)
 
 ;****************************************************************************************************************

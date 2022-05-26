@@ -6,7 +6,7 @@ KEY_LIN 	EQU 0C000H		; Keyboard Rows
 KEY_COL 	EQU 0E000H		; Keyboard Columns
 KEY_MASK	EQU 0FH			; Isolates the lower nibble from the output of the keypad
 BUTTON		EQU 0900H   		; Stores the pressed button
-LAST_BUTTON 	EQU 0902H		; Stores the button pressed last pressed button (prior to the current)
+LAST_BUTTON 	EQU 0902H		; Stores the last pressed button (prior to the current)
 
 
 ;****KEYPAD COMMANDS*******************************************************************
@@ -197,12 +197,12 @@ write_object:
 	MOV R3, [R9]			; obtém a LARGURA
 	ADD R9, 2			; para obter a primeira cor
 
-escreve_linha:				; escreve linha de pixeis
-	CALL escreve_coluna		; escreve a coluna de pixeis referente ao valor de R1
+write_line:				; escreve linha de pixeis
+	CALL write_column		; escreve a coluna de pixeis referente ao valor de R1
 	ADD R1, 1			; Aumenta linha de escrita		
 	SUB R0, 1			; Diminui altura
 	JZ end_RWpixeis 		; acaba ciclo se altura = 0
-	JMP escreve_linha		; repete escrita da linha até altura ser 0
+	JMP write_line			; repete escrita da linha até altura ser 0
 	
 end_RWpixeis:
 	POP R9				; Devolve valor do OBJETO
@@ -214,19 +214,19 @@ end_RWpixeis:
 ;*********************************************************************************************
 ;*Escreve coluna
 ;*********************************************************************************************						
-escreve_coluna:       			; desenha os pixels do boneco(colunas) a partir da tabela
+write_column:       			; desenha os pixels do boneco(colunas) a partir da tabela
 	PUSH R3				; LOCKS THE LENGHT
 	PUSH R2				; LOCKS THE COLUMN
 	PUSH R5				; cor do pixel
 	
-escreve_pixeis_coluna:				
+write_pixels_column:				
 	MOV R5, [R9]			; cor para apagar o próximo pixel do boneco
-	CALL escolhe_cor		; determina a cor do pixel
-	CALL escreve_pixel		; escreve cada pixel do boneco
+	CALL pick_colour		; determina a cor do pixel
+	CALL write_pixel		; escreve cada pixel do boneco
 	ADD R9, 2			; obter proxima cor
     	ADD R2, 1          	    	; próxima coluna
     	SUB R3, 1			; menos uma coluna para tratar
-   	JNZ escreve_pixeis_coluna      	; continua até percorrer toda a largura do objeto
+   	JNZ write_pixels_column      	; continua até percorrer toda a largura do objeto
   	POP R5							
    	POP R2							
    	POP R3
@@ -236,19 +236,19 @@ escreve_pixeis_coluna:
 ;*escreve pixel AUXILIARES
 ;***************************************************************************************************
     
-escolhe_cor:
+pick_colour:
 	PUSH R6
 	MOV R6, [PEN_MODE]
 	CMP R6,	ERASER 			; Checks if its in erasing mode
-	JNZ end_cor			; Se nao for Erasing a cor do pixel is a do objeto
+	JNZ end_colour			; Se nao for Erasing a cor do pixel is a do objeto
 	MOV R5, ERASER			; ITS erasing so a cor de R5 is 0
 
-end_cor:
+end_colour:
 	POP R6
 	RET				; END routine
    
     
-escreve_pixel:
+write_pixel:
 	MOV [DEF_LINE], R1		; seleciona a linha
 	MOV [DEF_COL], R2		; seleciona a coluna
 	MOV [DEF_PIXEL], R5		; altera a cor do pixel na linha e coluna já selecionadas
@@ -280,8 +280,8 @@ keypad:
 check_keypad:				; Checks if there is a pressed button
    	MOVB [R2], R1      		; Injects line in keypad lines
    	MOVB R0, [R3]      		; Reads from keypad columns
-   	MOV  R4, KEY_MASK		; Loads keypad mask to R4
-  	AND  R0, R4   			; Isolates the lower nibble
+   	MOV R4, KEY_MASK		; Loads keypad mask to R4
+  	AND R0, R4   			; Isolates the lower nibble
   	JZ wait_button    		; Jumps if no button is pressed in that line
    	CALL button_calc		; Calls the process that calculates the button pressed
   	JMP keypad_end			; Jumps to the end

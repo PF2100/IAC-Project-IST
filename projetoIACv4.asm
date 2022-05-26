@@ -48,10 +48,10 @@ COLUMN			EQU 30        	; Ship initial column (middle of screen)
 WIDTH			EQU 5
 HEIGHT			EQU 2
 COR_PIXEL		EQU 0FF00H	; cor do pixel: vermelho em ARGB (opaco e vermelho no máximo, verde e azul a 0)
-			    rgb(251,247,237) DIRTY WHITE
-			    rgb(230,9,9) STRONG RED
-			    rgb(229,62,54) DEAD RED
-			    rgb(66,133,244) BLUE
+			   ; rgb(251,247,237) DIRTY WHITE
+			   ; rgb(230,9,9) STRONG RED
+			   ; rgb(229,62,54) DEAD RED
+			   ; rgb(66,133,244) BLUE
 
 ;*************************************************************************************************************************
 

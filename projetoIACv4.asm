@@ -114,9 +114,9 @@ mov_ship:
 	PUSH R9
 	MOV R0, [BUTTON] 		; Moves button value to R0
 	CMP R0,	LEFT 			; Compares if the pressed button is equal to the Left Button
-	JZ MOVE_LEFT			; Jumps to MOVE_LEFT 			
+	JZ MOVE_LEFT			
 	CMP R0, RIGHT			; Compares if the pressed button is equal to the Right Button
-	JZ MOVE_RIGHT			; Jumps to MOVE_RIGHT
+	JZ MOVE_RIGHT
 	JMP SHIP_END
 
 MOVE_RIGHT:

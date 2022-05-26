@@ -3,6 +3,7 @@
 ; JOHNY: traduzir títulos e comentários do write/erase pixels, relatório
 
 ;****KEYPAD****************************************************************************
+
 INJECTED_LINE 	EQU 8			; Fourth keypad line
 KEY_LIN 	EQU 0C000H		; Keyboard Rows
 KEY_COL 	EQU 0E000H		; Keyboard Columns
@@ -12,6 +13,7 @@ LAST_BUTTON 	EQU 0902H		; Stores the last pressed button (prior to the current)
 
 
 ;****KEYPAD COMMANDS*******************************************************************
+
 START		EQU	0CH		; Start game
 PAUSE		EQU	0DH		; Pause game
 END		EQU	0EH		; End game
@@ -21,6 +23,7 @@ SHOOT		EQU	01H		; Shoot missile
 
 
 ;***MEDIA CENTER COMMANDS**************************************************************
+
 DEF_LINE    		EQU 600AH	; Define line command adress 
 DEF_COL  		EQU 600CH	; Define column command adress
 DEF_PIXEL    		EQU 6012H	; Write pixel command adress
@@ -29,7 +32,8 @@ DEL_SCREEN		EQU 6002H	; Delete all pixels drawn command adress
 SELECT_BACKGROUND 	EQU 6042H	; Select background command adress
 
 
-;***DISPLAY*****************************************************************************************************
+;***DISPLAY*******************************************************************************************
+
 MIN_COLUMN		EQU 0		; Leftmost column that the object can fill
 MAX_COLUMN		EQU 63        	; Rightmost column that the object can fill
 DELAY			EQU 400H	; Delay used to speed down the movement of the ship
@@ -37,15 +41,15 @@ PEN			EQU 1H		; Flag used to write pixels
 ERASER			EQU 0H		; Flag used to erase pixels
 MOV_TIMER		EQU 0FFFH
 
-;***SPACESHIP***************************************************************************************************
+;***SPACESHIP*************************************************************************************************************
+
 LINE        		EQU 16        	; Ship initial line (middle of screen)
 COLUMN			EQU 30        	; Ship initial column (middle of screen)
 WIDTH			EQU 5
 HEIGHT			EQU 2
 COR_PIXEL		EQU 0FF00H	; cor do pixel: vermelho em ARGB (opaco e vermelho no máximo, verde e azul a 0)
 
-;****************************************************************************************************************
-
+;*************************************************************************************************************************
 
 PLACE 1000H
 STACK 100H
@@ -67,6 +71,7 @@ CHANGE_COL:				; Stores column variation of the position of the object
 	
 CHANGE_LINE:				; Stores line variation of the position of the object
 	WORD 0H
+
 
 PLACE 0H
 
@@ -215,7 +220,8 @@ end_RWpixeis:
 
 ;*********************************************************************************************
 ;*Escreve coluna
-;*********************************************************************************************						
+;*********************************************************************************************	
+
 write_column:       			; desenha os pixels do boneco(colunas) a partir da tabela
 	PUSH R3				; LOCKS THE LENGHT
 	PUSH R2				; LOCKS THE COLUMN
@@ -256,7 +262,6 @@ write_pixel:
 	MOV [DEF_PIXEL], R5		; altera a cor do pixel na linha e coluna já selecionadas
 	RET
 	
-	
 ;*************************************************************************************
 ;*TEST LIMITS
 ;*************************************************************************************
@@ -267,7 +272,6 @@ write_pixel:
 ;**************************************************************************************
 ; Keypad code: Searches for a pressed keypad button
 ;**************************************************************************************
-
 
 keypad:
 	PUSH R0	

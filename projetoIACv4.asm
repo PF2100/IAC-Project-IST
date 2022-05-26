@@ -60,10 +60,10 @@ SHIP_PLACE:				; Reference to the position of ship
 PEN_MODE:
 	WORD 0H
 
-ALT_COL:
+CHANGE_COL:
 	WORD 0H
 	
-ALT_LINHA:
+CHANGE_LINE:
 	WORD 0H
 
 
@@ -117,18 +117,18 @@ MOV_NAVE:
 
 MOVE_RIGHT:
 	MOV R7, 1
-	MOV [ALT_COL], R7
+	MOV [CHANGE_COL], R7
 	JMP MOVE
 
 MOVE_LEFT:
 	MOV R7, -1
-	MOV [ALT_COL], R7
+	MOV [CHANGE_COL], R7
 	JMP MOVE
 	
 MOVE:
 	CALL Placement
 	;CALL TESTA_LIMITES
-	MOV R7, [ALT_COL]
+	MOV R7, [CHANGE_COL]
 	CMP R7, 0
 	JZ NAVE_END
 	CALL apaga_boneco		; apaga o boneco

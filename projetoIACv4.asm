@@ -5,8 +5,8 @@ LINE 		EQU 8			; Fourth keypad line
 KEY_LIN 	EQU 0C000H		; Keyboard Rows
 KEY_COL 	EQU 0E000H		; Keyboard Columns
 KEY_MASK	EQU 0FH			; Isolates the lower nibble from the output of the keypad
-BUTTON		EQU 0900H   		; Memory address that stores the pressed button
-LAST_BUTTON 	EQU 0902H
+BUTTON		EQU 0900H   		; Stores the pressed button
+LAST_BUTTON 	EQU 0902H		; Stores the button pressed last pressed button (prior to the current)
 
 
 ;****KEYPAD COMMANDS*******************************************************************
@@ -50,7 +50,7 @@ STACK 100H
 
 STACK_INIT:
 
-DEF_SHIP:				; Ship definition: drawing (colour of each pixel, height, width)
+DEF_SHIP:				; Ship layout (colour of each pixel, height, width)
 	WORD HEIGHT, WIDTH
 	WORD COR_PIXEL, 0, COR_PIXEL, 0, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL		
 	
@@ -69,40 +69,38 @@ CHANGE_LINE:				; Stores line variation of the position of the object
 PLACE 0H
 
 
-Initializer:
+INITIALIZER:
 	MOV SP, STACK_INIT		
 	MOV R0, 0 
 	MOV [DEL_WARNING], R0		; Deletes no background warning (R0 value is irrelevant)
 	MOV [DEL_SCREEN], R0		; Deletes all drawn pixels (R0 value is irrelevant)
     	MOV [SELECT_BACKGROUND], R0	; Selects background
 
-Obtem_nave:
-	MOV R8, SHIP_PLACE		; recebe o a linha e coluna em que a nave se encontra(0-7 bits para coluna , 8-15 bits para linha)
-	MOV R9, DEF_SHIP 		; Recebe formato do boneco
-	CALL placement			; Calcula e guarda valores da linha e coluna em R1 E R2 respetivamente
-	CALL erase_object		; Apaga o boneco do display
-	CALL draw_object		; Desenha boneco
+BUILD_SHIP:
+	MOV R8, SHIP_PLACE		; Stores line in the first byte of R8 and column on the second one
+	MOV R9, DEF_SHIP 		; Stores ship layout
+	CALL placement			; Calculates and stores the ship position reference, R1 stores line and R2 stores column
+	CALL erase_object		; Deletes ship from display
+	CALL draw_object		; Draws ship
 
 MAIN_CYCLE:
 	CALL keypad
-	CALL COMMANDS
-	CALL METEOROS
-	CALL MOV_NAVE
+	CALL commands
+	CALL meteors
+	CALL mov_ship
 	JMP MAIN_CYCLE
 
-COMMANDS:
+commands:
 	RET
 
-METEOROS:
+meteors:
 	RET
-					; MOVIMENTOS EM RELACAO A NAVE
-
 
 ;********************************************************************************************************
-;*MOVIMENTOS DA NAVE ( NAO MEXAM NESTAS FUNCOES DO MOV , da para meter mais simples)
+;*SHIP MOVEMENTS
 ;********************************************************************************************************
 
-MOV_NAVE:
+mov_ship:
 	PUSH R0
 	PUSH R7
 	PUSH R8 
@@ -115,18 +113,18 @@ MOV_NAVE:
 	JMP NAVE_END
 
 MOVE_RIGHT:
-	MOV R7, 1
-	MOV [CHANGE_COL], R7
+	MOV R7, 1			
+	MOV [CHANGE_COL], R7		; Moves the ship reference one column to the right
 	JMP MOVE
 
 MOVE_LEFT:
-	MOV R7, -1
+	MOV R7, -1			; Moves the ship reference one column to the left
 	MOV [CHANGE_COL], R7
 	JMP MOVE
 	
 MOVE:
 	CALL placement
-	;CALL TESTA_LIMITES
+	;CALL test_limits
 	MOV R7, [CHANGE_COL]
 	CMP R7, 0
 	JZ NAVE_END
@@ -258,7 +256,7 @@ escreve_pixel:
 	
 	
 ;*************************************************************************************
-;*Testa Limites
+;*TEST LIMITS
 ;*************************************************************************************
 
 

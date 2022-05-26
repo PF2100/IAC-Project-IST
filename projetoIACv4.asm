@@ -1,5 +1,5 @@
-; TIAGO: criar o layout da nave, criar as várias cores nas constantes SPACESHIP
-; PEDRO: mudar o background horroroso, limites do ecrã, delay
+; TIAGO: criar o layout da nave,criar layout do meteoro , criar as várias cores nas constantes SPACESHIP
+; PEDRO: mudar o background horroroso, limites do ecrã, mudar delay para contador ,adicionar codigo do meteoro , mexer com os displays,
 ; JOHNY: traduzir títulos e comentários do write/erase pixels, relatório
 
 ;****KEYPAD****************************************************************************
@@ -107,20 +107,20 @@ mov_ship:
 	PUSH R7
 	PUSH R8 
 	PUSH R9
-	MOV R0, [BUTTON] ;NAO FUNCIONA AINDA VAI TER OS MOVIMENTOS TODOS SO DA NAVE
-	CMP R0,	LEFT 
-	JZ MOVE_LEFT;
-	CMP R0, RIGHT;
-	JZ MOVE_RIGHT;
+	MOV R0, [BUTTON] 		; Moves button value to R0
+	CMP R0,	LEFT 			; Compares if the pressed button is equal to the Left Button
+	JZ MOVE_LEFT			; Jumps to MOVE_LEFT 			
+	CMP R0, RIGHT			; Compares if the pressed button is equal to the Right Button
+	JZ MOVE_RIGHT			; Jumps to MOVE_RIGHT
 	JMP SHIP_END
 
 MOVE_RIGHT:
 	MOV R7, 1			
-	MOV [CHANGE_COL], R7		; Moves the ship reference one column to the right
+	MOV [CHANGE_COL], R7		; Changes the column variation value to 1
 	JMP MOVE
 
 MOVE_LEFT:
-	MOV R7, -1			; Moves the ship reference one column to the left
+	MOV R7, -1			; Changes the column variation value to -1
 	MOV [CHANGE_COL], R7
 	JMP MOVE
 	
@@ -132,8 +132,8 @@ MOVE:
 	JZ SHIP_END
 	CALL erase_object		; Deletes object from current position
 	ADD R2, R7			; Adds column variation to the new reference position of ship
-	ADD R8, 1
-	MOVB [R8], R2			; Changes column
+	ADD R8, 1			; Adds 1 to SHIP_PLACE to obtain the column address
+	MOVB [R8], R2			; Changes column position of the ship
 	CALL draw_object		; Draws object in new position
 	CALL delay			;
 	

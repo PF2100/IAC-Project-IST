@@ -1,7 +1,7 @@
 
 
 ;****KEYPAD****************************************************************************
-LINE 		EQU 8			; Fourth keypad line
+INJECTED_LINE 	EQU 8			; Fourth keypad line
 KEY_LIN 	EQU 0C000H		; Keyboard Rows
 KEY_COL 	EQU 0E000H		; Keyboard Columns
 KEY_MASK	EQU 0FH			; Isolates the lower nibble from the output of the keypad
@@ -273,7 +273,7 @@ keypad:
 	PUSH R2
 	PUSH R3
 	PUSH R4
-	MOV R1, LINE     	 	; First line to test 
+	MOV R1, INJECTED_LINE    	; First line to test 
  	MOV R2, KEY_LIN			; Keypad input in R2
 	MOV R3, KEY_COL			; Keypad output in R3
 

@@ -38,49 +38,49 @@ MOV_TIMER		EQU 0FFFH
 ;***SPACESHIP***************************************************************************************************
 LINE        		EQU 16        	; Ship initial line (middle of screen)
 COLUMN			EQU 30        	; Ship initial column (middle of screen)
-WIDTH			EQU 5		;
-HEIGHT			EQU 2		; 
+WIDTH			EQU 5
+HEIGHT			EQU 2
 COR_PIXEL		EQU 0FF00H	; cor do pixel: vermelho em ARGB (opaco e vermelho no máximo, verde e azul a 0)
 
 ;****************************************************************************************************************
 
 
 PLACE 1000H
-STACK 100H				; Espaço reservado para a pilha 
+STACK 100H
 
 STACK_INIT:
 
-DEF_SHIP:				; tabela que define o boneco (cor, largura, pixels)
+DEF_SHIP:				; Ship definition: drawing (colour of each pixel, height, width)
 	WORD HEIGHT, WIDTH
 	WORD COR_PIXEL, 0, COR_PIXEL, 0, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL		
 	
-SHIP_PLACE:				; Reference to the position of ship
-	WORD 101EH			; First byte refers the line and the second one the column
+SHIP_PLACE:				; Reference to the position of ship 
+	WORD 101EH			; First byte of the word stores the line and the second one the column
 	
-PEN_MODE:
+PEN_MODE:				; Flag used to either draw or erase pixels by draw_object and erase_object
 	WORD 0H
 
-CHANGE_COL:
+CHANGE_COL:				; Stores column variation of the position of the object
 	WORD 0H
 	
-CHANGE_LINE:
+CHANGE_LINE:				; Stores line variation of the position of the object
 	WORD 0H
 
 PLACE 0H
 
 
 Initializer:
-	MOV SP, STACK_INIT
+	MOV SP, STACK_INIT		
 	MOV R0, 0 
-	MOV [DEL_WARNING], R0		; apaga o aviso de nenhum cenário selecionado (o valor de R0 não é relevante)
-	MOV [DEL_SCREEN], R0		; apaga todos os pixels já desenhados (o valor de R0 não é relevante)
-    	MOV [SELECT_BACKGROUND], R0	; seleciona o cenário de fundo
+	MOV [DEL_WARNING], R0		; Deletes no background warning (R0 value is irrelevant)
+	MOV [DEL_SCREEN], R0		; Deletes all drawn pixels (R0 value is irrelevant)
+    	MOV [SELECT_BACKGROUND], R0	; Selects background
 
 Obtem_nave:
 	MOV R8, SHIP_PLACE		; recebe o a linha e coluna em que a nave se encontra(0-7 bits para coluna , 8-15 bits para linha)
 	MOV R9, DEF_SHIP 		; Recebe formato do boneco
 	CALL placement			; Calcula e guarda valores da linha e coluna em R1 E R2 respetivamente
-	CALL delete_object		; Apaga o boneco do display
+	CALL erase_object		; Apaga o boneco do display
 	CALL draw_object		; Desenha boneco
 
 MAIN_CYCLE:
@@ -130,7 +130,7 @@ MOVE:
 	MOV R7, [CHANGE_COL]
 	CMP R7, 0
 	JZ NAVE_END
-	CALL delete_object		; apaga o boneco
+	CALL erase_object		; apaga o boneco
 	ADD R2, R7			; adiciona o incremento a coluna para indicar a nova coluna onde comeca
 	ADD R8, 1			;
 	MOVB [R8], R2			; muda a coluna onde o objeto esta
@@ -147,10 +147,10 @@ NAVE_END:
 
 	
 ;**********************************************************************************************
-;* DELETE OBJECTS
+;* ERASE OBJECTS
 ;**********************************************************************************************
 
-delete_object:
+erase_object:
 	PUSH R6
 	MOV R6, ERASER
 	MOV [PEN_MODE], R6
@@ -291,8 +291,8 @@ check_keypad:				; Checks if there is a pressed button
 wait_button:	
 	SHR R1, 1		   	; Changes which line is checked
 	JNZ check_keypad		; Jumps if there is still a line to check
-	MOV R1, [BUTTON]		;
-	MOV [LAST_BUTTON], R1		; 
+	MOV R1, [BUTTON]
+	MOV [LAST_BUTTON], R1	
 	MOV R2, 0FFFFH 			; Moves value -1 (estado normal do botao) to R2
 	MOV [BUTTON], R2		; Changes BUTTON value to FH
 

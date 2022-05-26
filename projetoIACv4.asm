@@ -6,7 +6,7 @@ KEY_LIN 	EQU 0C000H	; Keyboard Rows
 KEY_COL 	EQU 0E000H	; Keyboard Columns
 KEY_MASK	EQU 0FH		; Isolates the lower nibble from the output of the keypad
 BUTTON		EQU 0900H   	; Memory address that stores the pressed button
-LAST_BUTTON EQU 0902H
+LAST_BUTTON 	EQU 0902H
 
 
 ;****KEYPAD COMMANDS*******************************************************************
@@ -19,12 +19,12 @@ SHOOT		EQU	01H		; Shoot missile
 
 
 ;***MEDIA CENTER COMMANDS**************************************************************
-DEF_LINE    		EQU 600AH      ; endereço do comando para definir a linha
-DEF_COL  		EQU 600CH      ; endereço do comando para definir a coluna
-DEF_PIXEL    		EQU 6012H      ; endereço do comando para escrever um pixel
-DEL_WARNING     	EQU 6040H      ; endereço do comando para apagar o aviso de nenhum cenário selecionado
-DEL_SCREEN		EQU 6002H      ; endereço do comando para apagar todos os pixels já desenhados
-SELECT_BACKGROUND 	EQU 6042H      ; endereço do comando para selecionar uma imagem de fundo
+DEF_LINE    		EQU 600AH	; endereço do comando para definir a linha
+DEF_COL  		EQU 600CH	; endereço do comando para definir a coluna
+DEF_PIXEL    		EQU 6012H	; endereço do comando para escrever um pixel
+DEL_WARNING     	EQU 6040H	; endereço do comando para apagar o aviso de nenhum cenário selecionado
+DEL_SCREEN		EQU 6002H	; endereço do comando para apagar todos os pixels já desenhados
+SELECT_BACKGROUND 	EQU 6042H	; endereço do comando para selecionar uma imagem de fundo
 
 
 ;***DISPLAY*****************************************************************************************************
@@ -46,16 +46,16 @@ COR_PIXEL		EQU 0FF00H	; cor do pixel: vermelho em ARGB (opaco e vermelho no máx
 
 
 PLACE 1000H
-STACK 100H              ; Espaço reservado para a pilha 
+STACK 100H			; Espaço reservado para a pilha 
 
 STACK_INIT:
 
-DEF_NAVE:		; tabela que define o boneco (cor, largura, pixels)
+DEF_NAVE:			; tabela que define o boneco (cor, largura, pixels)
 	WORD ALTURA,LARGURA
 	WORD COR_PIXEL, 0, COR_PIXEL, 0, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL		
 	
-SHIP_PLACE:
-	WORD 101EH
+SHIP_PLACE:			; Reference to the position of ship
+	WORD 101EH		; First byte refers the line and the second one the column
 
 PEN_MODE:
 	WORD 0H
@@ -73,17 +73,16 @@ PLACE 0H
 Initializer:
 	MOV SP, STACK_INIT
 	MOV R0, 0 
-	MOV  [DEL_WARNING], R0			; apaga o aviso de nenhum cenário selecionado (o valor de R1 não é relevante)
-	MOV  [DEL_SCREEN], R0			; apaga todos os pixels já desenhados (o valor de R1 não é relevante)
+	MOV  [DEL_WARNING], R0			; apaga o aviso de nenhum cenário selecionado (o valor de R0 não é relevante)
+	MOV  [DEL_SCREEN], R0			; apaga todos os pixels já desenhados (o valor de R0 não é relevante)
     	MOV  [SELECT_BACKGROUND], R0		; seleciona o cenário de fundo
-	MOV	R7, 1			    	; valor a somar à coluna do boneco, para o movimentar
 
 Obtem_nave:
-	MOV R8, SHIP_PLACE		;recebe o a linha e coluna em que a nave se encontra(0-7 bits para coluna , 8-15 bits para linha)
-	MOV R9, DEF_NAVE 		;Recebe formato do boneco
-	CALL Placement			;Calcula e guarda valores da linha e coluna em R1 E R2 respetivamente
-	CALL apaga_boneco		;Apaga o boneco do display
-	CALL desenha_boneco		;Desenha boneco
+	MOV R8, SHIP_PLACE			; recebe o a linha e coluna em que a nave se encontra(0-7 bits para coluna , 8-15 bits para linha)
+	MOV R9, DEF_NAVE 			; Recebe formato do boneco
+	CALL placement				; Calcula e guarda valores da linha e coluna em R1 E R2 respetivamente
+	CALL apaga_boneco			; Apaga o boneco do display
+	CALL desenha_boneco			; Desenha boneco
 
 MAIN_CYCLE:
 	CALL keypad;
@@ -178,7 +177,7 @@ desenha_boneco:
 ;* Obtem enderecos
 ;******************************************************************************************	
 
-Placement:
+placement:
 	PUSH R8
 	MOVB R1 , [R8]			; R1 guarda linha
 	ADD R8 , 1			; Obtem endereço da coluna 

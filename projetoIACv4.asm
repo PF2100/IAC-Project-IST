@@ -1,5 +1,5 @@
-; TIAGO: criar o layout da nave,criar layout do meteor
-; PEDRO: limites do ecrã, mudar delay para contador ,adicionar codigo do meteoro , mexer com os displays,
+; TIAGO: Mexer com displays, pensar meteoro for later
+; PEDRO: limites do ecrã, mudar delay para contador
 ; JOHNY: traduzir títulos e comentários do write/erase pixels, relatório
 
 ;****KEYPAD****************************************************************************
@@ -19,6 +19,7 @@ PAUSE		EQU	0DH		; Pause game
 END		EQU	0EH		; End game
 LEFT		EQU	00H		; Move ship left
 RIGHT		EQU	02H		; Move ship right
+DOWN		EQU 	05H		; Move meteor down
 SHOOT		EQU	01H		; Shoot missile
 
 
@@ -106,6 +107,7 @@ INITIALIZER:
 	MOV [DEL_SCREEN], R0		; Deletes all drawn pixels (R0 value is irrelevant)
     	MOV [SELECT_BACKGROUND], R0	; Selects background
 
+
 BUILD_SHIP:
 	MOV R8, SHIP_PLACE		; Stores line in the first byte of R8 and column on the second one
 	MOV R9, DEF_SHIP 		; Stores ship layout
@@ -123,7 +125,7 @@ BUILD_METEOR:
 MAIN_CYCLE:
 	CALL keypad
 	CALL commands
-	CALL meteors
+	CALL mov_met
 	CALL mov_ship
 	JMP MAIN_CYCLE
 
@@ -142,6 +144,8 @@ mov_ship:
 	PUSH R7
 	PUSH R8 
 	PUSH R9
+	MOV R8, SHIP_PLACE
+	MOV R9, DEF_SHIP
 	MOV R0, [BUTTON] 		; Moves button value to R0
 	CMP R0,	LEFT 			; Compares if the pressed button is equal to the Left Button
 	JZ MOVE_LEFT			
@@ -180,7 +184,40 @@ SHIP_END:
 	POP R0
 	RET
 
+;********************************************************************************************************
+;*METEOR MOVEMENTS
+;********************************************************************************************************
+mov_met:
+	PUSH R0
+	PUSH R7
+	PUSH R8 
+	PUSH R9
+	MOV R0, [BUTTON] 		; Moves button value to R0
+	CMP R0, DOWN
+	JNZ MET_END
+	MOV R8, [LAST_BUTTON]
+	CMP R0,	R8
+	JZ MET_END
+	MOV R8, METEOR_PLACE		
+	MOV R9, DEF_METEOR
+
+
 	
+MOVE_MET:
+	CALL placement
+	CALL erase_object		; Deletes object from current position
+	ADD R1, 1			; Adds line variation to the new reference position of meteor
+	MOVB [R8], R1			; Changes line position of the meteor
+	CALL draw_object		; Draws object in new position
+	
+
+MET_END:
+	POP R9
+	POP R8
+	POP R7
+	POP R0
+	RET
+
 ;**********************************************************************************************
 ;* ERASE OBJECTS
 ;**********************************************************************************************

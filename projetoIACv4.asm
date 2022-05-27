@@ -1,5 +1,5 @@
-; TIAGO: criar o layout da nave,criar layout do meteoro , criar as várias cores nas constantes SPACESHIP
-; PEDRO: mudar o background horroroso, limites do ecrã, mudar delay para contador ,adicionar codigo do meteoro , mexer com os displays,
+; TIAGO: criar o layout da nave,criar layout do meteor
+; PEDRO: limites do ecrã, mudar delay para contador ,adicionar codigo do meteoro , mexer com os displays,
 ; JOHNY: traduzir títulos e comentários do write/erase pixels, relatório
 
 ;****KEYPAD****************************************************************************
@@ -41,22 +41,20 @@ PEN			EQU 1H		; Flag used to write pixels
 ERASER			EQU 0H		; Flag used to erase pixels
 MOV_TIMER		EQU 0FFFH
 
+
 ;***SPACESHIP*************************************************************************************************************
 
 LINE        		EQU 16        	; Ship initial line (middle of screen)
 COLUMN			EQU 30        	; Ship initial column (middle of screen)
 WIDTH			EQU 5
 HEIGHT			EQU 2
-; COR_PIXEL		EQU 0FF00H	cor do pixel: vermelho em ARGB (opaco e vermelho no máximo, verde e azul a 0)
-WHITE_PIXEL		EQU 0FFFDH	; rgb(251,247,237) DIRTY WHITE
-RED_PIXEL		EQU 0FE00H	; rgb(230,9,9) STRONG RED
-DARKRED_PIXEL		EQU 0FE33H	; rgb(229,62,54) DEAD RED
-BLUE_PIXEL		EQU 0F48FH	; rgb(66,133,244) BLUE
-			   
-			   
-			   
-			   
+COR_PIXEL		EQU 0FF00H	; cor do pixel: vermelho em ARGB (opaco e vermelho no máximo, verde e azul a 0)
+WHITE			EQU 0FFFDH	; rgb(251,247,237) DIRTY WHITE
+RED			EQU 0FE00H	; rgb(230,9,9) STRONG RED
+DARKRED			EQU 0FE33H	; rgb(229,62,54) DEAD RED
+BLUE			EQU 0F48FH	; rgb(66,133,244) BLUE
 
+			   
 ;*************************************************************************************************************************
 
 PLACE 1000H

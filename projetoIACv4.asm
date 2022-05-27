@@ -47,12 +47,12 @@ MOV_TIMER		EQU 0FFFH
 LINE        		EQU 16        	; Ship initial line (middle of screen)
 COLUMN			EQU 30        	; Ship initial column (middle of screen)
 WIDTH			EQU 5
-HEIGHT			EQU 2
+HEIGHT			EQU 4
 COR_PIXEL		EQU 0FF00H	; cor do pixel: vermelho em ARGB (opaco e vermelho no máximo, verde e azul a 0)
-WHITE			EQU 0FFFDH	; rgb(251,247,237) DIRTY WHITE
-RED			EQU 0FE00H	; rgb(230,9,9) STRONG RED
-DARKRED			EQU 0FE33H	; rgb(229,62,54) DEAD RED
-BLUE			EQU 0F48FH	; rgb(66,133,244) BLUE
+WHITE			EQU 0FFFDH	; Hexadecimal value of the colour WHITE
+RED			EQU 0FE00H	; Hexadecimal value of the colour RED
+DARKRED			EQU 0FE33H	; Hexadecimal value of the colour DARK RED
+BLUE			EQU 0F48FH	; Hexadecimal value of the colour BLUE
 
 			   
 ;*************************************************************************************************************************
@@ -64,7 +64,7 @@ STACK_INIT:
 
 DEF_SHIP:				; Ship layout (colour of each pixel, height, width)
 	WORD HEIGHT, WIDTH
-	WORD COR_PIXEL, 0, COR_PIXEL, 0, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL, COR_PIXEL		
+	WORD 0, 0, BLUE, 0, 0, 0, RED, WHITE, RED, 0, DARKRED, WHITE, WHITE, WHITE, DARKRED, WHITE, 0, WHITE, 0, WHITE		
 	
 SHIP_PLACE:				; Reference to the position of ship 
 	WORD 101EH			; First byte of the word stores the line and the second one the column

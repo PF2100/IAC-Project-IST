@@ -57,9 +57,10 @@ BLUE			EQU 0F48FH	; Hexadecimal value of the colour BLUE
 
 ;***METEORS*************************************************************************************************************
 
-LINE_MET		EQU 3		; Meteor initial line
-COLUMN_MET		EQU 16		; Meteor initial column
-
+METEOR_LINE		EQU 3		; Meteor initial line
+METEOR_COLUMN		EQU 16		; Meteor initial column
+METEOR_HEIGHT		EQU 6
+METEOR_WIDTH		EQU 6
 METEOR_COLOUR		EQU 0 		; Hexadecimal value of the colour #
 
 
@@ -75,7 +76,7 @@ DEF_SHIP:				; Ship layout (colour of each pixel, height, width)
 	WORD 0, 0, BLUE, 0, 0, 0, RED, WHITE, RED, 0, DARKRED, WHITE, WHITE, WHITE, DARKRED, WHITE, 0, WHITE, 0, WHITE
 	
 DEF_METEOR:
-	WORD HEIGHT_MET, WIDTH_MET
+	WORD METEOR_HEIGHT, METEOR_WIDTH
 	WORD 0, 0, RED, RED, 0, 0, 0, RED, RED, RED, RED, 0, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED,
 		0, RED, RED, RED, RED, 0, 0, 0, RED, RED, 0, 0
 	
@@ -116,7 +117,7 @@ BUILD_METEOR:
 	MOV R8, METEOR_PLACE		; Stores line in the first byte of R8 and column on the second one
 	MOV R9, DEF_METEOR		; Stores meteor layout
 	CALL placement			; Calculates and stores the meteor position reference, R1 stores line and R2 stores column
-	CALL erase_placement		; Deletes meteor from display
+	CALL erase_object		; Deletes meteor from display
 	CALL draw_object		; Draws meteor
 
 MAIN_CYCLE:

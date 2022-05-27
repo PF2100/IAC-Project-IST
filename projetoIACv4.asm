@@ -54,7 +54,15 @@ RED			EQU 0FE00H	; Hexadecimal value of the colour RED
 DARKRED			EQU 0FE33H	; Hexadecimal value of the colour DARK RED
 BLUE			EQU 0F48FH	; Hexadecimal value of the colour BLUE
 
-			   
+
+;***METEORS*************************************************************************************************************
+
+LINE_MET		EQU 3		; Meteor initial line
+COLUMN_MET		EQU 16		; Meteor initial column
+
+METEOR_COLOUR		EQU 0 		; Hexadecimal value of the colour #
+
+
 ;*************************************************************************************************************************
 
 PLACE 1000H
@@ -64,10 +72,18 @@ STACK_INIT:
 
 DEF_SHIP:				; Ship layout (colour of each pixel, height, width)
 	WORD HEIGHT, WIDTH
-	WORD 0, 0, BLUE, 0, 0, 0, RED, WHITE, RED, 0, DARKRED, WHITE, WHITE, WHITE, DARKRED, WHITE, 0, WHITE, 0, WHITE		
+	WORD 0, 0, BLUE, 0, 0, 0, RED, WHITE, RED, 0, DARKRED, WHITE, WHITE, WHITE, DARKRED, WHITE, 0, WHITE, 0, WHITE
+	
+DEF_METEOR:
+	WORD HEIGHT_MET, WIDTH_MET
+	WORD 0, 0, RED, RED, 0, 0, 0, RED, RED, RED, RED, 0, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED,
+		0, RED, RED, RED, RED, 0, 0, 0, RED, RED, 0, 0
 	
 SHIP_PLACE:				; Reference to the position of ship 
 	WORD 101EH			; First byte of the word stores the line and the second one the column
+
+METEOR_PLACE:
+	WORD 0310H			; First byte of the word stores the line and the second one the column
 	
 PEN_MODE:				; Flag used to either draw or erase pixels by draw_object and erase_object
 	WORD 0H
@@ -95,6 +111,13 @@ BUILD_SHIP:
 	CALL placement			; Calculates and stores the ship position reference, R1 stores line and R2 stores column
 	CALL erase_object		; Deletes ship from display
 	CALL draw_object		; Draws ship
+	
+BUILD_METEOR:
+	MOV R8, METEOR_PLACE		; Stores line in the first byte of R8 and column on the second one
+	MOV R9, DEF_METEOR		; Stores meteor layout
+	CALL placement			; Calculates and stores the meteor position reference, R1 stores line and R2 stores column
+	CALL erase_placement		; Deletes meteor from display
+	CALL draw_object		; Draws meteor
 
 MAIN_CYCLE:
 	CALL keypad

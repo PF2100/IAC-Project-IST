@@ -10,7 +10,7 @@
 
 ; DONE: Deve desenhar o rover e movimentá-lo para a esquerda e para a direita (de forma contínua, enquanto se carrega na tecla), até atingir o limite do ecrã;
 
-; - Deve desenhar um meteoro (bom ou mau), no tamanho máximo, numa coluna qualquer, no topo do ecrã. Esse meteoro deve descer uma linha no ecrã sempre que se 
+; DONE: Deve desenhar um meteoro (bom ou mau), no tamanho máximo, numa coluna qualquer, no topo do ecrã. Esse meteoro deve descer uma linha no ecrã sempre que se 
 ; carrega numa tecla (escolha qual), mas apenas uma linha por cada clique na tecla
 
 ; DONE: Deve ter um cenário de fundo 

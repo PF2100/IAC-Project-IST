@@ -1,6 +1,27 @@
+TO-DO:
+
 ; TIAGO: Mexer com displays, pensar meteoro for later
 ; PEDRO: limites do ecrã, mudar delay para contador
 ; JOHNY: traduzir títulos e comentários do write/erase pixels, relatório
+
+GOALS:
+
+DONE: O teclado deve estar completamente funcional, detetando todas as teclas;
+
+DONE: Deve desenhar o rover e movimentá-lo para a esquerda e para a direita (de forma contínua, enquanto se carrega na tecla), até atingir o limite do ecrã;
+
+- Deve desenhar um meteoro (bom ou mau), no tamanho máximo, numa coluna
+qualquer, no topo do ecrã. Esse meteoro deve descer uma linha no ecrã sempre que se 
+carrega numa tecla (escolha qual), mas apenas uma linha por cada clique na tecla
+
+DONE: Deve ter um cenário de fundo 
+
+- Deve ter um efeito sonoro, de cada vez que se carrega na tecla para o meteoro descer
+
+- Use outras duas teclas para aumentar e diminuir o valor nos displays. Para já pode ser 
+em hexadecimal, mas na versão final terá de fazer uma rotina para converter um 
+número qualquer para dígitos em decimal.
+
 
 ;****KEYPAD****************************************************************************
 
@@ -50,10 +71,10 @@ COLUMN			EQU 30        	; Ship initial column (middle of screen)
 WIDTH			EQU 5
 HEIGHT			EQU 4
 COR_PIXEL		EQU 0FF00H	; cor do pixel: vermelho em ARGB (opaco e vermelho no máximo, verde e azul a 0)
-WHITE			EQU 0FFFDH	; Hexadecimal value of the colour WHITE
-RED			EQU 0FE00H	; Hexadecimal value of the colour RED
-DARKRED			EQU 0FE33H	; Hexadecimal value of the colour DARK RED
-BLUE			EQU 0F48FH	; Hexadecimal value of the colour BLUE
+WHITE			EQU 0FFFDH	; Hexadecimal ARGB value of the colour WHITE
+RED			EQU 0FE00H	; Hexadecimal ARGB value of the colour RED
+DARKRED			EQU 0FE33H	; Hexadecimal ARGB value of the colour DARK RED
+BLUE			EQU 0F48FH	; Hexadecimal ARGB value of the colour BLUE
 
 
 ;***METEORS*************************************************************************************************************
@@ -219,7 +240,7 @@ MET_END:
 	RET
 	
 ;***********************************************************************************************************************
-;* Limit_Tests
+;* TESTS DISPLAY LIMITS
 ;***********************************************************************************************************************
 
 test_ship_limits:
@@ -232,16 +253,16 @@ test_ship_limits:
 	JGT test_right
 	
 test_left:
-	MOV R3 , MIN_COLUMN
-	CMP R3 , R2
+	MOV R3, MIN_COLUMN
+	CMP R3, R2
 	JNZ test_end
 	MOV R3, 0
 	MOV [R1], R3
 
 test_right:
 	MOV R3, MAX_COLUMN
-	ADD R2, 4			;width is 4 , so the last pixel is 4 pixels away
-	CMP R3 , R2
+	ADD R2, 4			; width is 4 , so the last pixel is 4 pixels away
+	CMP R3, R2
 	JNZ test_end
 	MOV R3, 0
 	MOV [R1], R3
@@ -251,7 +272,6 @@ test_end:
 	POP R2
 	POP R1
 	RET
-
 	
 
 ;***********************************************************************************************************************
@@ -321,6 +341,7 @@ end_RWpixeis:
 	POP R0
 	RET
 
+
 ;*********************************************************************************************
 ;*Escreve coluna
 ;*********************************************************************************************	
@@ -342,6 +363,7 @@ write_pixels_column:
    	POP R2							
    	POP R3
    	RET
+
 
 ;***************************************************************************************************
 ;*escreve pixel AUXILIARES
@@ -365,12 +387,6 @@ write_pixel:
 	MOV [DEF_PIXEL], R5		; altera a cor do pixel na linha e coluna já selecionadas
 	RET
 	
-;*************************************************************************************
-;*TEST LIMITS
-;*************************************************************************************
-
-
-
 
 ;**************************************************************************************
 ; Keypad code: Searches for a pressed keypad button

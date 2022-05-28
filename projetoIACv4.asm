@@ -1,26 +1,24 @@
-TO-DO:
+; TO-DO:
 
 ; TIAGO: Mexer com displays, pensar meteoro for later
 ; PEDRO: limites do ecrã, mudar delay para contador
 ; JOHNY: traduzir títulos e comentários do write/erase pixels, relatório
 
-GOALS:
+; GOALS:
 
-DONE: O teclado deve estar completamente funcional, detetando todas as teclas;
+; DONE: O teclado deve estar completamente funcional, detetando todas as teclas;
 
-DONE: Deve desenhar o rover e movimentá-lo para a esquerda e para a direita (de forma contínua, enquanto se carrega na tecla), até atingir o limite do ecrã;
+; DONE: Deve desenhar o rover e movimentá-lo para a esquerda e para a direita (de forma contínua, enquanto se carrega na tecla), até atingir o limite do ecrã;
 
-- Deve desenhar um meteoro (bom ou mau), no tamanho máximo, numa coluna
-qualquer, no topo do ecrã. Esse meteoro deve descer uma linha no ecrã sempre que se 
-carrega numa tecla (escolha qual), mas apenas uma linha por cada clique na tecla
+; - Deve desenhar um meteoro (bom ou mau), no tamanho máximo, numa coluna qualquer, no topo do ecrã. Esse meteoro deve descer uma linha no ecrã sempre que se 
+; carrega numa tecla (escolha qual), mas apenas uma linha por cada clique na tecla
 
-DONE: Deve ter um cenário de fundo 
+; DONE: Deve ter um cenário de fundo 
 
-- Deve ter um efeito sonoro, de cada vez que se carrega na tecla para o meteoro descer
+; - Deve ter um efeito sonoro, de cada vez que se carrega na tecla para o meteoro descer
 
-- Use outras duas teclas para aumentar e diminuir o valor nos displays. Para já pode ser 
-em hexadecimal, mas na versão final terá de fazer uma rotina para converter um 
-número qualquer para dígitos em decimal.
+; - Use outras duas teclas para aumentar e diminuir o valor nos displays. Para já pode ser em hexadecimal, mas na versão final terá de fazer 
+; uma rotina para converter um número qualquer para dígitos em decimal.
 
 
 ;****KEYPAD****************************************************************************

@@ -159,6 +159,7 @@ commands:
 ;********************************************************************************************************
 ;*SHIP MOVEMENTS
 ;********************************************************************************************************
+
 mov_ship:
 	PUSH R0
 	PUSH R7
@@ -167,17 +168,16 @@ mov_ship:
 	MOV R8, SHIP_PLACE
 	MOV R9, DEF_SHIP
 	MOV R0, [BUTTON] 		; Moves button value to R0
-	
 	MOV R7, -1
 	CMP R0,	LEFT 			; Compares if the pressed button is equal to the Left Button
-	JZ check_delay			
+	JZ CHECK_DELAY			
 	MOV R7, 1
 	CMP R0, RIGHT			; Compares if the pressed button is equal to the Right Button
-	JZ check_delay
+	JZ CHECK_DELAY
 	JMP SHIP_END
 
 
-check_delay:
+CHECK_DELAY:
 	CALL delay
 	JNZ SHIP_END
 	
@@ -207,6 +207,7 @@ SHIP_END:
 ;********************************************************************************************************
 ;*METEOR MOVEMENTS
 ;********************************************************************************************************
+
 mov_met:
 	PUSH R0
 	PUSH R7
@@ -237,6 +238,7 @@ MET_END:
 	POP R7
 	POP R0
 	RET
+	
 	
 ;***********************************************************************************************************************
 ;* TESTS DISPLAY LIMITS

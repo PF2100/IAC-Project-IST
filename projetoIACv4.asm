@@ -23,7 +23,7 @@
 
 ;****KEYPAD****************************************************************************
 
-INJECTED_LINE 	EQU 8			; Fourth keypad line
+INJECTED_LINE 	EQU 8			; Initial keypad line (fourth)
 KEY_LIN 	EQU 0C000H		; Keyboard Rows
 KEY_COL 	EQU 0E000H		; Keyboard Columns
 KEY_MASK	EQU 0FH			; Isolates the lower nibble from the output of the keypad
@@ -59,19 +59,19 @@ MAX_COLUMN		EQU 63        	; Rightmost column that the object can fill
 DELAY			EQU 400H	; Delay used to speed down the movement of the ship
 PEN			EQU 1H		; Flag used to write pixels
 ERASER			EQU 0H		; Flag used to erase pixels
-MOV_TIMER		EQU 010H
+MOV_TIMER		EQU 010H	; Movement delay definition
 
 
 ;***SPACESHIP*************************************************************************************************************
 
-LINE        		EQU 16        	; Ship initial line (middle of screen)
-COLUMN			EQU 30        	; Ship initial column (middle of screen)
+LINE        		EQU 27        	; Ship initial line (bottom of the screen)
+COLUMN			EQU 30        	; Ship initial column (middle of the screen)
 WIDTH			EQU 5
 HEIGHT			EQU 4
 COR_PIXEL		EQU 0FF00H	; cor do pixel: vermelho em ARGB (opaco e vermelho no máximo, verde e azul a 0)
 WHITE			EQU 0FFFDH	; Hexadecimal ARGB value of the colour WHITE
 RED			EQU 0FE00H	; Hexadecimal ARGB value of the colour RED
-DARKRED			EQU 0FE33H	; Hexadecimal ARGB value of the colour DARK RED
+DARKRED			EQU 0FE33H	; Hexadecimal ARGB value of the colour DARKRED
 BLUE			EQU 0F48FH	; Hexadecimal ARGB value of the colour BLUE
 
 
@@ -101,10 +101,10 @@ DEF_METEOR:
 		0, RED, RED, RED, RED, 0, 0, 0, RED, RED, 0, 0
 	
 SHIP_PLACE:				; Reference to the position of ship 
-	WORD 101EH			; First byte of the word stores the line and the second one the column
+	BYTE LINE, COLUMN		; First byte of the word stores the line and the second one the column
 
 METEOR_PLACE:
-	WORD 0310H			; First byte of the word stores the line and the second one the column
+	BYTE METEOR_LINE, METEOR_COLUMN	; First byte of the word stores the line and the second one the column
 	
 
 CHANGE_COL:				; Stores column variation of the position of the object

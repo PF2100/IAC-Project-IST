@@ -115,7 +115,8 @@ CHANGE_LINE:				; Stores line variation of the position of the object
 	
 PEN_MODE:				; Flag used to either draw or erase pixels by draw_object and erase_object
 	WORD 0H
-contador:
+	
+DELAY_COUNTER:				; Counter until MOV_TIMER is reached and ship moves
 	WORD 0H
 
 
@@ -153,9 +154,7 @@ MAIN_CYCLE:
 
 commands:
 	RET
-
-meteors:
-	RET
+	
 
 ;********************************************************************************************************
 ;*SHIP MOVEMENTS
@@ -478,7 +477,7 @@ delay:
 	PUSH R1
 	CALL same_button;
 	JNZ reset
-	MOV R0, [contador]
+	MOV R0, [DELAY_COUNTER]
 	ADD R0, 1
 	MOV R1, MOV_TIMER
 	CMP R0, R1
@@ -489,7 +488,7 @@ reset:
 	CMP R0, 0
 	
 end_delay:
-	MOV [contador], R0
+	MOV [DELAY_COUNTER], R0
 	POP R0
 	POP R1
 	RET

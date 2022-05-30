@@ -243,27 +243,27 @@ test_ship_limits:
 	PUSH R1
 	PUSH R2
 	PUSH R3
-	MOV R1, CHANGE_COL
-	MOV R3, [R1]
+	MOV R1, CHANGE_COL		; Stores CHANGE_COL adress
+	MOV R3, [R1]			; Stores column variation of object in R3
 	CMP R3, 0
-	JGT test_right
+	JGT test_right			; Jumps if CHANGE_COL is positive (move right)
 	
 test_left:
-	MOV R3, MIN_COLUMN
-	CMP R3, R2
-	JNZ test_end
-	MOV R3, 0
-	MOV [R1], R3
+	MOV R3, MIN_COLUMN		; Stores the minimium display column 
+	CMP R3, R2			; Checks if obejct has reached MIN_COLUMN
+	JNZ test_end			; Ends routine if it hasn't
+	MOV R3, 0			
+	MOV [R1], R3			; Changes CHANGE_COL to 0 (ship won't move left)
 
 test_right:
-	MOV R3, MAX_COLUMN
-	ADD R2, 4			; width is 4 , so the last pixel is 4 pixels away
-	CMP R3, R2
-	JNZ test_end
+	MOV R3, MAX_COLUMN		; Stores the maximum display column 
+	ADD R2, 4			; Width is 4, so the last pixel is 4 pixels away from position reference
+	CMP R3, R2			; Checks if obejct has reached MAX_COLUMN
+	JNZ test_end			; Ends routine if it hasn't
 	MOV R3, 0
-	MOV [R1], R3
+	MOV [R1], R3			; Changes CHANGE_COL to 0 (ship won't move right)
 
-test_end:
+test_end:				; Restores stack values in the registers
 	POP R3
 	POP R2
 	POP R1

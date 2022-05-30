@@ -1,7 +1,7 @@
 ; TO-DO:
 
 ; TIAGO: Mexer com displays, pensar meteoro for later
-; PEDRO: limites do ecrã, mudar delay para contador
+; PEDRO: 
 ; JOHNY: traduzir títulos e comentários do write/erase pixels, relatório
 
 ; GOALS:
@@ -59,7 +59,7 @@ MAX_COLUMN		EQU 63        	; Rightmost column that the object can fill
 DELAY			EQU 400H	; Delay used to speed down the movement of the ship
 PEN			EQU 1H		; Flag used to write pixels
 ERASER			EQU 0H		; Flag used to erase pixels
-MOV_TIMER		EQU 0FFFH
+MOV_TIMER		EQU 010H
 
 
 ;***SPACESHIP*************************************************************************************************************
@@ -106,13 +106,16 @@ SHIP_PLACE:				; Reference to the position of ship
 METEOR_PLACE:
 	WORD 0310H			; First byte of the word stores the line and the second one the column
 	
-PEN_MODE:				; Flag used to either draw or erase pixels by draw_object and erase_object
-	WORD 0H
 
 CHANGE_COL:				; Stores column variation of the position of the object
 	WORD 0H
 	
 CHANGE_LINE:				; Stores line variation of the position of the object
+	WORD 0H
+	
+PEN_MODE:				; Flag used to either draw or erase pixels by draw_object and erase_object
+	WORD 0H
+contador:
 	WORD 0H
 
 
@@ -175,12 +178,15 @@ mov_ship:
 MOVE_RIGHT:
 	MOV R7, 1			
 	MOV [CHANGE_COL], R7		; Changes the column variation value to 1
-	JMP MOVE
+	JMP check_delay
 
 MOVE_LEFT:
 	MOV R7, -1			; Changes the column variation value to -1
 	MOV [CHANGE_COL], R7
-	JMP MOVE
+
+check_delay:
+	CALL delay
+	JNZ SHIP_END
 	
 MOVE:
 	CALL placement
@@ -468,11 +474,35 @@ button_formula:
 ;***************************************************************************************	
 
 delay:
-	PUSH R11
-	MOV R11, MOV_TIMER
+	PUSH R0
+	PUSH R1
+	CALL same_button;
+	JNZ reset
+	MOV R0, [contador]
+	ADD R0, 1
+	MOV R1, MOV_TIMER
+	CMP R0, R1
+	JNZ end_delay
+
+reset:
+	MOV R0, 0
+	CMP R0, 0
 	
-delay_cicle:
-	SUB R11, 1
-	JNZ delay_cicle
-	POP R11
+end_delay:
+	MOV [contador], R0
+	POP R0
+	POP R1
+	RET
+
+;*****************************************************************************************
+;*Checks if the last button is the same as the current pressed one
+;*****************************************************************************************	
+same_button:
+	PUSH R0
+	PUSH R1
+	MOV R0, [BUTTON]
+	MOV R1, [LAST_BUTTON]
+	CMP R0, R1
+	POP R1
+	POP R0
 	RET

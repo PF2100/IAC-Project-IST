@@ -1,6 +1,6 @@
 ; TO-DO:
 
-; TIAGO: Mexer com displays, pensar meteoro for later
+; TIAGO:
 ; PEDRO: 
 ; JOHNY: traduzir títulos e comentários do write/erase pixels, relatório
 
@@ -30,6 +30,12 @@ KEY_MASK	EQU 0FH			; Isolates the lower nibble from the output of the keypad
 BUTTON		EQU 0900H   		; Stores the pressed button
 LAST_BUTTON 	EQU 0902H		; Stores the last pressed button (prior to the current)
 
+;****DISPLAY****************************************************************************
+DISPLAY		EQU 0A000H		; Display adress
+UPPER_BOUND	EQU 0100H
+LOWER_BOUND	EQU 0000H
+DISPLAY_TIMER 	EQU 0100H
+
 
 ;****KEYPAD COMMANDS*******************************************************************
 
@@ -38,7 +44,9 @@ PAUSE		EQU	0DH		; Pause game
 END		EQU	0EH		; End game
 LEFT		EQU	00H		; Move ship left
 RIGHT		EQU	02H		; Move ship right
-DOWN		EQU 	05H		; Move meteor down
+MET_DOWN	EQU 	05H		; Move meteor down
+DIS_DOWN	EQU	07H		; Move display value down
+DIS_UP		EQU	03H		; Move display value up
 SHOOT		EQU	01H		; Shoot missile
 
 
@@ -50,16 +58,18 @@ DEF_PIXEL    		EQU 6012H	; Write pixel command adress
 DEL_WARNING     	EQU 6040H	; Ignore no background warning command adress
 DEL_SCREEN		EQU 6002H	; Delete all pixels drawn command adress
 SELECT_BACKGROUND 	EQU 6042H	; Select background command adress
+PLAY_SOUND_VIDEO	EQU 605AH	;
 
 
-;***DISPLAY*******************************************************************************************
+;***SCREEN*******************************************************************************************
 
 MIN_COLUMN		EQU 0		; Leftmost column that the object can fill
-MAX_COLUMN		EQU 63        	; Rightmost column that the object can fill
+MAX_COLUMN		EQU 63       	; Rightmost column that the object can fill
 DELAY			EQU 400H	; Delay used to speed down the movement of the ship
 PEN			EQU 1H		; Flag used to write pixels
 ERASER			EQU 0H		; Flag used to erase pixels
 MOV_TIMER		EQU 010H	; Movement delay definition
+
 
 
 ;***SPACESHIP*************************************************************************************************************
@@ -119,16 +129,22 @@ PEN_MODE:				; Flag used to either draw or erase pixels by draw_object and erase
 DELAY_COUNTER:				; Counter until MOV_TIMER is reached and ship moves
 	WORD 0H
 
+DISPLAY_VALUE:
+	WORD 100H;
+
+
 
 PLACE 0H
 
 
 INITIALIZER:
-	MOV SP, STACK_INIT		
-	MOV R0, 0 
+	MOV SP, STACK_INIT
+	MOV R0 , 0
 	MOV [DEL_WARNING], R0		; Deletes no background warning (R0 value is irrelevant)
 	MOV [DEL_SCREEN], R0		; Deletes all drawn pixels (R0 value is irrelevant)
     	MOV [SELECT_BACKGROUND], R0	; Selects background
+    	MOV R0 , [DISPLAY_VALUE]
+	MOV [DISPLAY], R0
 
 
 BUILD_SHIP:
@@ -148,6 +164,7 @@ BUILD_METEOR:
 MAIN_CYCLE:
 	CALL keypad
 	CALL commands
+	CALL mov_display
 	CALL mov_met
 	CALL mov_ship
 	JMP MAIN_CYCLE
@@ -165,6 +182,7 @@ mov_ship:
 	PUSH R7
 	PUSH R8 
 	PUSH R9
+	PUSH R10
 	MOV R8, SHIP_PLACE		; Stores current ship position
 	MOV R9, DEF_SHIP		; Stores ship layout
 	MOV R0, [BUTTON] 		; Stores button value in R0
@@ -178,6 +196,7 @@ mov_ship:
 
 
 CHECK_DELAY:
+	MOV R10, MOV_TIMER
 	CALL delay			
 	JNZ SHIP_END			; Jumps to the end of the routine if DELAY_COUNTER is neither 0 nor MOV_TIMER
 	
@@ -195,7 +214,8 @@ MOVE:
 	CALL draw_object		; Draws object in new position
 	
 
-SHIP_END:				; Restores stack values in the registers
+SHIP_END:			; Restores stack values in the registers
+	POP R10
 	POP R9
 	POP R8
 	POP R7
@@ -213,7 +233,7 @@ mov_met:
 	PUSH R8 
 	PUSH R9
 	MOV R0, [BUTTON] 		; Moves button value to R0
-	CMP R0, DOWN
+	CMP R0, MET_DOWN
 	JNZ MET_END			; Ends routine if the pressed button isn't DOWN
 	CALL same_button		; Checks if the the button pressed is the last pressed button (prior to the current)
 	JZ MET_END			; Ends routine if previous instruction is true
@@ -226,6 +246,8 @@ MOVE_MET:
 	ADD R1, 1			; Adds line variation to the new reference position of meteor
 	MOVB [R8], R1			; Changes line position of the meteor
 	CALL draw_object		; Draws object in new position
+	MOV R1, 0
+	MOV [PLAY_SOUND_VIDEO], R1
 	
 MET_END:				; Restores stack values in the registers
 	POP R9
@@ -234,9 +256,80 @@ MET_END:				; Restores stack values in the registers
 	POP R0
 	RET
 	
+
+;***********************************************************************************************************************
+;* DISPLAY MANAGEMENT
+;***********************************************************************************************************************
+
+mov_display:
+	PUSH R0	
+	PUSH R1
+	PUSH R2
+	PUSH R7
+	MOV R0, [BUTTON] 		; Stores button value in R0
+	MOV R7, -5
+	CMP R0,	DIS_DOWN 		; Compares if the pressed button is DIS_DOWN Button
+	JZ CHECK_DIS_DELAY	
+	MOV R7, 5
+	CMP R0, DIS_UP			; Compares if the pressed button is DIS_UP Button
+	JZ CHECK_DIS_DELAY
+	JMP DISPLAY_END			; Jumps to the end of the routine if button is neither DIS_DOWN nor DIS_UP
 	
+CHECK_DIS_DELAY:
+	MOV R10, DISPLAY_TIMER
+	CALL delay			
+	JNZ DISPLAY_END			; Jumps to the end of the routine if DELAY_COUNTER is neither 0 nor MOV_TIMER
+	
+CHANGE_DISPLAY:
+	CALL test_display_limits
+	;CALL convert_hex_to_dec
+	MOV [DISPLAY], R1
+	MOV [DISPLAY_VALUE], R1
+		
+	
+DISPLAY_END:
+	POP R7
+	POP R2
+	POP R1
+	POP R0
+	RET
+	
+
 ;***********************************************************************************************************************
 ;* TESTS DISPLAY LIMITS
+;***********************************************************************************************************************	
+
+test_display_limits:
+	PUSH R0
+	CMP R7, -5
+	JZ LOWER_LIMIT
+	
+
+UPPER_LIMIT:
+	MOV R0, UPPER_BOUND
+	MOV R1, [DISPLAY_VALUE]
+	ADD R1 , R7
+	CMP R1 , R0
+	JLT test_display_limits_end
+	MOV R1, R0
+	JMP test_display_limits_end
+
+LOWER_LIMIT:
+	MOV R0, LOWER_BOUND
+	MOV R1, [DISPLAY_VALUE]
+	ADD R1 , R7
+	CMP R1 , R0
+	JGT test_display_limits_end
+	MOV R1, R0
+	
+test_display_limits_end:
+	POP R0
+	RET
+
+
+
+;***********************************************************************************************************************
+;* TESTS SCREEN LIMITS
 ;***********************************************************************************************************************
 
 test_ship_limits:
@@ -468,11 +561,12 @@ button_formula:
 delay:
 	PUSH R0
 	PUSH R1
+	PUSH R10
 	CALL same_button;
 	JNZ reset
 	MOV R0, [DELAY_COUNTER]
 	ADD R0, 1
-	MOV R1, MOV_TIMER
+	MOV R1, R10
 	CMP R0, R1
 	JNZ end_delay
 
@@ -482,8 +576,9 @@ reset:
 	
 end_delay:
 	MOV [DELAY_COUNTER], R0
-	POP R0
+	POP R10
 	POP R1
+	POP R0
 	RET
 
 

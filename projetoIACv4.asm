@@ -134,14 +134,14 @@ INITIALIZER:
 BUILD_SHIP:
 	MOV R8, SHIP_PLACE		; Stores line in the first byte of R8 and column on the second one
 	MOV R9, DEF_SHIP 		; Stores ship layout
-	CALL placement			; Calculates and stores the ship position reference, R1 stores line and R2 stores column
+	CALL placement			; Stores the ship position reference, R1 stores line and R2 stores column
 	CALL erase_object		; Deletes ship from display
 	CALL draw_object		; Draws ship
 	
 BUILD_METEOR:
 	MOV R8, METEOR_PLACE		; Stores line in the first byte of R8 and column on the second one
 	MOV R9, DEF_METEOR		; Stores meteor layout
-	CALL placement			; Calculates and stores the meteor position reference, R1 stores line and R2 stores column
+	CALL placement			; Stores the meteor position reference, R1 stores line and R2 stores column
 	CALL erase_object		; Deletes meteor from display
 	CALL draw_object		; Draws meteor
 
@@ -161,42 +161,41 @@ commands:
 ;********************************************************************************************************
 
 mov_ship:
-	PUSH R0
+	PUSH R0	
 	PUSH R7
 	PUSH R8 
 	PUSH R9
-	MOV R8, SHIP_PLACE
-	MOV R9, DEF_SHIP
-	MOV R0, [BUTTON] 		; Moves button value to R0
+	MOV R8, SHIP_PLACE		; Stores current ship position
+	MOV R9, DEF_SHIP		; Stores ship layout
+	MOV R0, [BUTTON] 		; Stores button value in R0
 	MOV R7, -1
-	CMP R0,	LEFT 			; Compares if the pressed button is equal to the Left Button
-	JZ CHECK_DELAY			
+	CMP R0,	LEFT 			; Compares if the pressed button is LEFT Button
+	JZ CHECK_DELAY	
 	MOV R7, 1
-	CMP R0, RIGHT			; Compares if the pressed button is equal to the Right Button
+	CMP R0, RIGHT			; Compares if the pressed button is RIGHT Button
 	JZ CHECK_DELAY
-	JMP SHIP_END
+	JMP SHIP_END			; Jumps to the end of the routine if button is neither LEFT or RIGHT
 
 
 CHECK_DELAY:
-	CALL delay
-	JNZ SHIP_END
+	CALL delay			
+	JNZ SHIP_END			; Jumps to the end of the routine if DELAY_COUNTER is neither 0 nor MOV_TIMER
 	
 MOVE:
-	MOV [CHANGE_COL], R7
-	CALL placement
-	CALL test_ship_limits
-	MOV R7, [CHANGE_COL]
+	MOV [CHANGE_COL], R7		; Stores column variation value of ship position
+	CALL placement			; Stores ship line in R1 and its column in R2
+	CALL test_ship_limits		; Checks if ship has reached left or right display limits
+	MOV R7, [CHANGE_COL]		; Stores new column variation value after checking display limits
 	CMP R7, 0
-	JZ SHIP_END
+	JZ SHIP_END			; Ends routine if column variation is 0
 	CALL erase_object		; Deletes object from current position
 	ADD R2, R7			; Adds column variation to the new reference position of ship
 	ADD R8, 1			; Adds 1 to SHIP_PLACE to obtain the column address
 	MOVB [R8], R2			; Changes column position of the ship
 	CALL draw_object		; Draws object in new position
-	CALL delay			;
 	
 
-SHIP_END:
+SHIP_END:				; Restores stack values in the registers
 	POP R9
 	POP R8
 	POP R7
@@ -215,24 +214,20 @@ mov_met:
 	PUSH R9
 	MOV R0, [BUTTON] 		; Moves button value to R0
 	CMP R0, DOWN
-	JNZ MET_END
-	MOV R8, [LAST_BUTTON]
-	CMP R0,	R8
-	JZ MET_END
-	MOV R8, METEOR_PLACE		
-	MOV R9, DEF_METEOR
-
-
+	JNZ MET_END			; Ends routine if the pressed button isn't DOWN
+	CALL same_button		; Checks if the the button pressed is the last pressed button (prior to the current)
+	JZ MET_END			; Ends routine if previous instruction is true
+	MOV R8, METEOR_PLACE		; Stores meteor reference position
+	MOV R9, DEF_METEOR		; Stores meteor layout
 	
 MOVE_MET:
-	CALL placement
+	CALL placement			; Stores meteor reference position (Line in R1 and Column in R2)
 	CALL erase_object		; Deletes object from current position
 	ADD R1, 1			; Adds line variation to the new reference position of meteor
 	MOVB [R8], R1			; Changes line position of the meteor
 	CALL draw_object		; Draws object in new position
 	
-
-MET_END:
+MET_END:				; Restores stack values in the registers
 	POP R9
 	POP R8
 	POP R7
@@ -491,9 +486,11 @@ end_delay:
 	POP R1
 	RET
 
+
 ;*****************************************************************************************
 ;*Checks if the last button is the same as the current pressed one
-;*****************************************************************************************	
+;*****************************************************************************************
+
 same_button:
 	PUSH R0
 	PUSH R1

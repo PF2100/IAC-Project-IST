@@ -1,25 +1,3 @@
-; TO-DO:
-
-; TIAGO:
-; PEDRO: 
-; JOHNY: traduzir títulos e comentários do write/erase pixels, relatório
-
-; GOALS:
-
-; DONE: O teclado deve estar completamente funcional, detetando todas as teclas;
-
-; DONE: Deve desenhar o rover e movimentá-lo para a esquerda e para a direita (de forma contínua, enquanto se carrega na tecla), até atingir o limite do ecrã;
-
-; DONE: Deve desenhar um meteoro (bom ou mau), no tamanho máximo, numa coluna qualquer, no topo do ecrã. Esse meteoro deve descer uma linha no ecrã sempre que se 
-; carrega numa tecla (escolha qual), mas apenas uma linha por cada clique na tecla
-
-; DONE: Deve ter um cenário de fundo 
-
-; - Deve ter um efeito sonoro, de cada vez que se carrega na tecla para o meteoro descer
-
-; - Use outras duas teclas para aumentar e diminuir o valor nos displays. Para já pode ser em hexadecimal, mas na versão final terá de fazer 
-; uma rotina para converter um número qualquer para dígitos em decimal.
-
 
 ;****KEYPAD****************************************************************************
 
@@ -213,7 +191,7 @@ MOVE:
 	CALL draw_object		; Draws object in new position
 	
 
-SHIP_END:			; Restores stack values in the registers
+SHIP_END:				; Restores stack values in the registers
 	POP R10
 	POP R9
 	POP R8
@@ -257,7 +235,7 @@ MET_END:				; Restores stack values in the registers
 	
 
 ;***********************************************************************************************************************
-;* DISPLAY MANAGEMENT
+;*DISPLAY MANAGEMENT
 ;***********************************************************************************************************************
 
 mov_display:
@@ -265,13 +243,13 @@ mov_display:
 	PUSH R1
 	PUSH R2
 	PUSH R7
-	MOV R0, [BUTTON] 		; Stores button value in R0
-	MOV R7, -5
-	CMP R0,	DIS_DOWN 		; Compares if the pressed button is DIS_DOWN Button
-	JZ CHECK_DIS_DELAY	
-	MOV R7, 5
-	CMP R0, DIS_UP			; Compares if the pressed button is DIS_UP Button
-	JZ CHECK_DIS_DELAY
+	MOV R0, [BUTTON] 		; Stores pressed button in R0
+	MOV R7, -5			; Sets energy variation to -5
+	CMP R0,	DIS_DOWN 		; Compares if the pressed button is DIS_DOWN button
+	JZ CHECK_DIS_DELAY		; Jumps if button is DIS_DOWN
+	MOV R7, 5			; Sets energy variation to 5
+	CMP R0, DIS_UP			; Compares if the pressed button is DIS_UP button
+	JZ CHECK_DIS_DELAY		; Jumps if button is DIS_UP
 	JMP DISPLAY_END			; Jumps to the end of the routine if button is neither DIS_DOWN nor DIS_UP
 	
 CHECK_DIS_DELAY:
@@ -280,11 +258,10 @@ CHECK_DIS_DELAY:
 	JNZ DISPLAY_END			; Jumps to the end of the routine if DELAY_COUNTER is neither 0 nor MOV_TIMER
 	
 CHANGE_DISPLAY:
-	CALL test_display_limits
+	CALL test_display_limits	; Checks if the energy has reached display limits (100 upper, 0 lower)
 	;CALL convert_hex_to_dec
-	MOV [DISPLAY], R1
-	MOV [DISPLAY_VALUE], R1
-		
+	MOV [DISPLAY], R1		; Sets display to R1
+	MOV [DISPLAY_VALUE], R1		; Stores new display value in memory
 	
 DISPLAY_END:
 	POP R7
@@ -298,27 +275,27 @@ DISPLAY_END:
 ;* TESTS DISPLAY LIMITS
 ;***********************************************************************************************************************	
 
-test_display_limits:
+test_display_limits:	
 	PUSH R0
-	CMP R7, -5
-	JZ LOWER_LIMIT
+	CMP R7, -5			; Checks if display variation is -5
+	JZ LOWER_LIMIT			; Jumps if DIS_DOWN is pressed
 	
 UPPER_LIMIT:
 	MOV R0, UPPER_BOUND
 	MOV R1, [DISPLAY_VALUE]
-	ADD R1 , R7
-	CMP R1 , R0
-	JLT test_display_limits_end
-	MOV R1, R0
-	JMP test_display_limits_end
+	ADD R1, R7			; Adds display variation (5) to R1 (DISPLAY_VALUE)
+	CMP R1, R0
+	JLT test_display_limits_end	; Jumps if DISPLAY_VALUE is lower then upper limit (limit hasn't been reached)
+	MOV R1, R0			; Sets DISPLAY_VALUE to UPPER_BOUND (limit reached)
+	JMP test_display_limits_end	; Ends routine
 
 LOWER_LIMIT:
 	MOV R0, LOWER_BOUND
-	MOV R1, [DISPLAY_VALUE]
-	ADD R1 , R7
-	CMP R1 , R0
-	JGT test_display_limits_end
-	MOV R1, R0
+	MOV R1, [DISPLAY_VALUE]		
+	ADD R1, R7			; Adds display variation (-5) to R1 (DISPLAY_VALUE)
+	CMP R1, R0			
+	JGT test_display_limits_end	; Jumps if DISPLAY_VALUE is greater then lower limit (limit hasn't been reached)
+	MOV R1, R0			; Sets DISPLAY_VALUE to LOWER_BOUND (limit reached)
 	
 test_display_limits_end:
 	POP R0
@@ -360,34 +337,34 @@ test_end:				; Restores stack values in the registers
 	RET
 	
 
-;***********************************************************************************************************************
+;*****************************************************************************************
 ;* ERASE OBJECTS
-;***********************************************************************************************************************
+;*****************************************************************************************
 
 erase_object:
 	PUSH R6
-	MOV R6, ERASER
-	MOV [PEN_MODE], R6
-	CALL write_object
+	MOV R6, ERASER			; Loads ERASER flag to R6
+	MOV [PEN_MODE], R6		; Sets PEN_MODE to ERASER
+	CALL write_object		; Writes object in eraser mode (deletes it)
 	POP R6
 	RET
 
 
-;**************************************************************************************
+;****************************************************************************************
 ;*DRAW OBJECTS
-;**************************************************************************************	
+;****************************************************************************************
 
 draw_object:
 	PUSH R6
-	MOV R6, PEN
-	MOV [PEN_MODE], R6 
-	CALL write_object
+	MOV R6, PEN			; Loads PEN flag to R6
+	MOV [PEN_MODE], R6 		; Sets PEN_MODE to PEN
+	CALL write_object		; Writes object in pen mode (draws it)
 	POP R6
 	RET
 
 	
 ;******************************************************************************************
-;* SHIP POSITION REFERENCE
+;*SHIP POSITION REFERENCE
 ;******************************************************************************************	
 
 placement:
@@ -400,44 +377,44 @@ placement:
 	
 	
 ;*******************************************************************************************	
-;*Escreve pixel LINHA
+;*WRITE OBJECTS
 ;*******************************************************************************************
 
 write_object:
 	PUSH R0
 	PUSH R1
 	PUSH R3
-	PUSH R9
-	MOV R0, [R9]			; obtém a ALTURA do boneco
-	ADD R9, 2			; adiciona 2 para obter o endereço da LARGURA do boneco
-	MOV R3, [R9]			; obtém a LARGURA
-	ADD R9, 2			; para obter a primeira cor
+	PUSH R9				; Stores object layout table (R9) in stack
+	MOV R0, [R9]			; Stores object height
+	ADD R9, 2			; Adds 2 to get object width
+	MOV R3, [R9]			; Stores object width
+	ADD R9, 2			; Gets first pixel colour to use
 
-write_line:				; escreve linha de pixeis
-	CALL write_column		; escreve a coluna de pixeis referente ao valor de R1
-	ADD R1, 1			; Aumenta linha de escrita		
-	SUB R0, 1			; Diminui altura
-	JZ end_RWpixeis 		; acaba ciclo se altura = 0
-	JMP write_line			; repete escrita da linha até altura ser 0
+write_lines:				; Writes a line of pixels
+	CALL write_line			; Writes the line of pixels that refer to the value of R1
+	ADD R1, 1			; Selects next line to write		
+	SUB R0, 1			; Decreases the remaining object height to write (-1)
+	JZ end_write_lines		; Ends routine if remaining object height to write is 0 (object is written)
+	JMP write_lines			; Repeats write_lines if there are more lines to write
 	
-end_RWpixeis:
-	POP R9				; Devolve valor do OBJETO
+end_write_lines:
+	POP R9				; Returns object layout table
 	POP R3
-	POP R1				; Devolve valor da Linha
+	POP R1				; Returns object position line
 	POP R0
 	RET
 
 
 ;*********************************************************************************************
-;*Escreve coluna
+;*WRITE LINE
 ;*********************************************************************************************	
 
-write_column:       			; desenha os pixels do boneco(colunas) a partir da tabela
+write_line:       			; desenha os pixels do boneco(colunas) a partir da tabela
 	PUSH R3				; LOCKS THE LENGHT
 	PUSH R2				; LOCKS THE COLUMN
 	PUSH R5				; cor do pixel
 	
-write_pixels_column:				
+write_pixels_line:				
 	MOV R5, [R9]			; cor para apagar o próximo pixel do boneco
 	CALL pick_colour		; determina a cor do pixel
 	CALL write_pixel		; escreve cada pixel do boneco

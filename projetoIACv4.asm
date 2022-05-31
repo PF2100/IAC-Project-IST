@@ -271,7 +271,7 @@ DISPLAY_END:
 	
 
 ;***********************************************************************************************************************
-;* TESTS DISPLAY LIMITS
+;*TESTS DISPLAY LIMITS
 ;***********************************************************************************************************************	
 
 test_display_limits:	
@@ -302,7 +302,7 @@ test_display_limits_end:
 
 
 ;***********************************************************************************************************************
-;* TESTS SCREEN LIMITS
+;*TESTS SCREEN LIMITS
 ;***********************************************************************************************************************
 
 test_ship_limits:
@@ -337,7 +337,7 @@ test_end:				; Restores stack values in the registers
 	
 
 ;*****************************************************************************************
-;* ERASE OBJECTS
+;*ERASE OBJECTS
 ;*****************************************************************************************
 
 erase_object:
@@ -428,30 +428,29 @@ write_pixels_line:
 
 
 ;***************************************************************************************************
-;*escreve pixel AUXILIARES
+;*WRITE PIXEL AUXILIAR ROUTINES
 ;***************************************************************************************************
     
 pick_colour:
 	PUSH R6
 	MOV R6, [PEN_MODE]
-	CMP R6,	ERASER 			; Checks if its in erasing mode
-	JNZ end_colour			; Se nao for Erasing a cor do pixel is a do objeto
-	MOV R5, ERASER			; ITS erasing so a cor de R5 is 0
+	CMP R6,	ERASER 			; Checks PEN_MODE flag
+	JNZ end_colour			; If PEN mode is selected, pixel colour remains the same
+	MOV R5, ERASER			; If ERASER mode is activated, colour 0 is selected
 
 end_colour:
 	POP R6
-	RET				; END routine
-   
+	RET				; Ends routine
     
 write_pixel:
-	MOV [DEF_LINE], R1		; seleciona a linha
-	MOV [DEF_COL], R2		; seleciona a coluna
-	MOV [DEF_PIXEL], R5		; altera a cor do pixel na linha e coluna já selecionadas
+	MOV [DEF_LINE], R1		; Selects line to write
+	MOV [DEF_COL], R2		; Selects column to write
+	MOV [DEF_PIXEL], R5		; Changes pixel colour in line and colum selected
 	RET
 	
 
 ;**************************************************************************************
-; Keypad code: Searches for a pressed keypad button
+;*KEYPAD: SEARCHES FOR A PRESSED BUTTON
 ;**************************************************************************************
 
 keypad:
@@ -490,7 +489,7 @@ keypad_end:
 	RET
 
 ;***********************************************************************************************************
-;*Determines which button was pressed
+;*KEYPAD: DETERMINES WHICH BUTTON WAS PRESSED
 ;************************************************************************************************************
 
 button_calc:
@@ -518,7 +517,7 @@ button_calc_end:
 
 
 ;***********************************************************************************
-;*PRESSED BUTTON CALCULATOR (R2)
+;*KEYPAD: PRESSED BUTTON CALCULATOR (R2)
 ;***********************************************************************************
 
 button_formula:
@@ -556,7 +555,7 @@ end_delay:
 
 
 ;*****************************************************************************************
-;*Checks if the last button is the same as the current pressed one
+;*CHECKS IF THE LAST BUTTON IS THE SAME AS THE CURRENT PRESSED ONE
 ;*****************************************************************************************
 
 same_button:

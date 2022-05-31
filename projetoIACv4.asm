@@ -55,7 +55,6 @@ LINE        		EQU 27        	; Ship initial line (bottom of the screen)
 COLUMN			EQU 30        	; Ship initial column (middle of the screen)
 WIDTH			EQU 5
 HEIGHT			EQU 4
-COR_PIXEL		EQU 0FF00H	; cor do pixel: vermelho em ARGB (opaco e vermelho no máximo, verde e azul a 0)
 WHITE			EQU 0FFFDH	; Hexadecimal ARGB value of the colour WHITE
 RED			EQU 0FE00H	; Hexadecimal ARGB value of the colour RED
 DARKRED			EQU 0FE33H	; Hexadecimal ARGB value of the colour DARKRED

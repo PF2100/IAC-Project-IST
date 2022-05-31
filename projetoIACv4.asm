@@ -71,7 +71,6 @@ ERASER			EQU 0H		; Flag used to erase pixels
 MOV_TIMER		EQU 010H	; Movement delay definition
 
 
-
 ;***SPACESHIP*************************************************************************************************************
 
 LINE        		EQU 27        	; Ship initial line (bottom of the screen)
@@ -116,7 +115,6 @@ SHIP_PLACE:				; Reference to the position of ship
 METEOR_PLACE:
 	BYTE METEOR_LINE, METEOR_COLUMN	; First byte of the word stores the line and the second one the column
 	
-
 CHANGE_COL:				; Stores column variation of the position of the object
 	WORD 0H
 	
@@ -130,35 +128,36 @@ DELAY_COUNTER:				; Counter until MOV_TIMER is reached and ship moves
 	WORD 0H
 
 DISPLAY_VALUE:
-	WORD 100H;
+	WORD 100H			; Energy display initial value
+	
 
-
+;*************************************************************************************************************************
 
 PLACE 0H
 
 
 INITIALIZER:
 	MOV SP, STACK_INIT
-	MOV R0 , 0
+	MOV R0, 0
 	MOV [DEL_WARNING], R0		; Deletes no background warning (R0 value is irrelevant)
 	MOV [DEL_SCREEN], R0		; Deletes all drawn pixels (R0 value is irrelevant)
     	MOV [SELECT_BACKGROUND], R0	; Selects background
-    	MOV R0 , [DISPLAY_VALUE]
-	MOV [DISPLAY], R0
+    	MOV R0, [DISPLAY_VALUE]		; Stores energy display initial value in R0
+	MOV [DISPLAY], R0		; Initializes display
 
 
 BUILD_SHIP:
 	MOV R8, SHIP_PLACE		; Stores line in the first byte of R8 and column on the second one
 	MOV R9, DEF_SHIP 		; Stores ship layout
 	CALL placement			; Stores the ship position reference, R1 stores line and R2 stores column
-	CALL erase_object		; Deletes ship from display
+	CALL erase_object		; Deletes ship from screen
 	CALL draw_object		; Draws ship
 	
 BUILD_METEOR:
 	MOV R8, METEOR_PLACE		; Stores line in the first byte of R8 and column on the second one
 	MOV R9, DEF_METEOR		; Stores meteor layout
 	CALL placement			; Stores the meteor position reference, R1 stores line and R2 stores column
-	CALL erase_object		; Deletes meteor from display
+	CALL erase_object		; Deletes meteor from screen
 	CALL draw_object		; Draws meteor
 
 MAIN_CYCLE:
@@ -203,8 +202,8 @@ CHECK_DELAY:
 MOVE:
 	MOV [CHANGE_COL], R7		; Stores column variation value of ship position
 	CALL placement			; Stores ship line in R1 and its column in R2
-	CALL test_ship_limits		; Checks if ship has reached left or right display limits
-	MOV R7, [CHANGE_COL]		; Stores new column variation value after checking display limits
+	CALL test_ship_limits		; Checks if ship has reached left or right screen limits
+	MOV R7, [CHANGE_COL]		; Stores new column variation value after checking screen limits
 	CMP R7, 0
 	JZ SHIP_END			; Ends routine if column variation is 0
 	CALL erase_object		; Deletes object from current position
@@ -304,7 +303,6 @@ test_display_limits:
 	CMP R7, -5
 	JZ LOWER_LIMIT
 	
-
 UPPER_LIMIT:
 	MOV R0, UPPER_BOUND
 	MOV R1, [DISPLAY_VALUE]
@@ -327,7 +325,6 @@ test_display_limits_end:
 	RET
 
 
-
 ;***********************************************************************************************************************
 ;* TESTS SCREEN LIMITS
 ;***********************************************************************************************************************
@@ -342,14 +339,14 @@ test_ship_limits:
 	JGT test_right			; Jumps if CHANGE_COL is positive (move right)
 	
 test_left:
-	MOV R3, MIN_COLUMN		; Stores the minimium display column 
+	MOV R3, MIN_COLUMN		; Stores the minimium screen column 
 	CMP R3, R2			; Checks if obejct has reached MIN_COLUMN
 	JNZ test_end			; Ends routine if it hasn't
 	MOV R3, 0			
 	MOV [R1], R3			; Changes CHANGE_COL to 0 (ship won't move left)
 
 test_right:
-	MOV R3, MAX_COLUMN		; Stores the maximum display column 
+	MOV R3, MAX_COLUMN		; Stores the maximum screen column 
 	ADD R2, 4			; Width is 4, so the last pixel is 4 pixels away from position reference
 	CMP R3, R2			; Checks if obejct has reached MAX_COLUMN
 	JNZ test_end			; Ends routine if it hasn't

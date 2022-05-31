@@ -408,19 +408,19 @@ end_write_lines:
 ;*WRITE LINE
 ;*********************************************************************************************	
 
-write_line:       			; desenha os pixels do boneco(colunas) a partir da tabela
-	PUSH R3				; LOCKS THE LENGHT
-	PUSH R2				; LOCKS THE COLUMN
-	PUSH R5				; cor do pixel
+write_line:      
+	PUSH R3				; Stores width
+	PUSH R2				; Stores current column in stack
+	PUSH R5				; Stores pixel colour in stack
 	
 write_pixels_line:				
-	MOV R5, [R9]			; cor para apagar o próximo pixel do boneco
-	CALL pick_colour		; determina a cor do pixel
-	CALL write_pixel		; escreve cada pixel do boneco
-	ADD R9, 2			; obter proxima cor
-    	ADD R2, 1          	    	; próxima coluna
-    	SUB R3, 1			; menos uma coluna para tratar
-   	JNZ write_pixels_column      	; continua até percorrer toda a largura do objeto
+	MOV R5, [R9]			; Stores pixel colour in R5
+	CALL pick_colour		; Changes colour to 0 if ERASER mode is activated
+	CALL write_pixel		; Writes pixel
+	ADD R9, 2			; Gets next colour (R9 is object layout)
+    	ADD R2, 1          	    	; Gets next column
+    	SUB R3, 1			; Decreases number of remaining columns to write (-1)
+   	JNZ write_pixels_column      	; Repeats until all width of the object is written (until R3 is 0)
   	POP R5							
    	POP R2							
    	POP R3
@@ -561,9 +561,9 @@ end_delay:
 same_button:
 	PUSH R0
 	PUSH R1
-	MOV R0, [BUTTON]
-	MOV R1, [LAST_BUTTON]
-	CMP R0, R1
+	MOV R0, [BUTTON]		; Stores current pressed button in R0
+	MOV R1, [LAST_BUTTON]		; Stores previous pressed button in R1
+	CMP R0, R1			; Compares if they are the same and activates a flag (if true)
 	POP R1
 	POP R0
 	RET

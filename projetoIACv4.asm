@@ -9,11 +9,11 @@ BUTTON		EQU 0900H   		; Stores the pressed button
 LAST_BUTTON 	EQU 0902H		; Stores the last pressed button (prior to the current)
 
 ;****DISPLAY****************************************************************************
-DISPLAY		EQU 0A000H		; Display adress
-UPPER_BOUND	EQU 0100H
-LOWER_BOUND	EQU 0000H
-DISPLAY_TIMER 	EQU 0100H
 
+DISPLAY		EQU 0A000H		; Display adress
+UPPER_BOUND	EQU 0100H		; Display upper bound (energy)
+LOWER_BOUND	EQU 0000H		; Display lower bound (energy)
+DISPLAY_TIMER 	EQU 0100H		; Display delay between pressing button and changing energy value
 
 ;****KEYPAD COMMANDS*******************************************************************
 

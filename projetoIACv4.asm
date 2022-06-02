@@ -107,7 +107,7 @@ DELAY_COUNTER:				; Counter until MOV_TIMER is reached and ship moves
 DISPLAY_VALUE:
 	WORD 100H			; Energy display initial value
 	
-DELAY_FLAG:
+DELAY_FLAG:				; Ship movement delay flag
 	WORD 0H
 	
 
@@ -141,19 +141,17 @@ BUILD_METEOR:
 	CALL draw_object		; Draws meteor
 
 MAIN_CYCLE:
-	CALL keypad
-	CALL commands
-	CALL mov_display
-	CALL mov_met
-	CALL mov_ship
+	CALL keypad			; Checks if there is a pressed button
+	CALL mov_display		; Checks if the pressed button changes the display
+	CALL mov_met			; Checks if the pressed button changes the meteor position
+	CALL mov_ship			; Checks if the pressed button changes the ship position
 	JMP MAIN_CYCLE
-
-commands:
-	RET
-	
+		
 
 ;********************************************************************************************************
-;*SHIP MOVEMENTS
+;-mov_ship
+;
+; Moves ship position (accordingly to its delay) if the button pressed is either LEFT or RIGHT
 ;********************************************************************************************************
 
 mov_ship:
@@ -205,7 +203,9 @@ SHIP_END:				; Restores stack values in the registers
 
 
 ;********************************************************************************************************
-;*METEOR MOVEMENTS
+;-move_met
+;
+; Moves the meteor position if the pressed button is MET_DOWN
 ;********************************************************************************************************
 
 mov_met:
@@ -240,7 +240,9 @@ MET_END:				; Restores stack values in the registers
 	
 
 ;***********************************************************************************************************************
-;*DISPLAY MANAGEMENT
+;-mov_display:
+;
+; Changes the value that the display currently shows
 ;***********************************************************************************************************************
 
 mov_display:
@@ -276,9 +278,14 @@ DISPLAY_END:
 	RET
 	
 
-;***********************************************************************************************************************
-;*TESTS DISPLAY LIMITS
-;***********************************************************************************************************************	
+;***********************************************************************************************************************************
+;-test_display_limits:
+;
+; Changes the display value to either 100 or 0 , if the addition of R7 to the display value surpasses the display limits
+; INPUT:	R1 - value that the display currently shows
+;	 	R7 - display variation
+; OUTPUT:	R1 - new display value
+;***********************************************************************************************************************************	
 
 test_display_limits:	
 	PUSH R0
@@ -308,7 +315,9 @@ test_display_limits_end:
 
 
 ;***********************************************************************************************************************
-;*TESTS SCREEN LIMITS
+;-test_ship_limits:
+;
+; Changes value of the column variation (CHANGE_COL) to 0 if the ship placement is at either column limits
 ;***********************************************************************************************************************
 
 test_ship_limits:
@@ -343,11 +352,9 @@ test_end:				; Restores stack values in the registers
 	
 
 ;*****************************************************************************************
-;*erase_object:
+;-erase_object:
 ;
 ; Erases object written by write_object, by changing PEN_MODE to 0
-; INPUT: 	R8 - Object reference screen position
-;		R9 - Object definition (heigth, width, layout)
 ;*****************************************************************************************
 
 erase_object:
@@ -360,11 +367,9 @@ erase_object:
 
 
 ;****************************************************************************************
-;*draw_object:
+;-draw_object:
 ;
 ; Draws object written by write_object, by changing PEN_MODE to 1
-; INPUT: 	R8 - Object reference screen position
-;		R9 - Object definition (heigth, width, layout)
 ;****************************************************************************************
 
 draw_object:

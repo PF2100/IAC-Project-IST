@@ -439,7 +439,7 @@ END_WRITE_LINES:
 ; Writes a line of pixels determined by the object width to draw
 ;
 ; INPUT: 	R2 - Object position column
-;		R3 - Object position line
+;		R3 - Object width
 ;		R5 - Object pixel colour
 ;*********************************************************************************************	
 

@@ -343,7 +343,11 @@ test_end:				; Restores stack values in the registers
 	
 
 ;*****************************************************************************************
-;*ERASE OBJECTS
+;*erase_object:
+;
+; Erases object written by write_object, by changing PEN_MODE to 0
+; INPUT: 	R8 - Object reference screen position
+;		R9 - Object definition (heigth, width, layout)
 ;*****************************************************************************************
 
 erase_object:
@@ -356,7 +360,11 @@ erase_object:
 
 
 ;****************************************************************************************
-;*DRAW OBJECTS
+;*draw_object:
+;
+; Draws object written by write_object, by changing PEN_MODE to 1
+; INPUT: 	R8 - Object reference screen position
+;		R9 - Object definition (heigth, width, layout)
 ;****************************************************************************************
 
 draw_object:
@@ -369,7 +377,13 @@ draw_object:
 
 	
 ;******************************************************************************************
-;*SHIP POSITION REFERENCE
+;*placement:
+;
+; Obtains object reference position
+;
+; INPUT: 	R8 - Object reference screen position
+; OUTPUT:	R1 - Object reference position line
+;		R2 - Object reference position column
 ;******************************************************************************************	
 
 placement:
@@ -382,7 +396,11 @@ placement:
 	
 	
 ;*******************************************************************************************	
-;*WRITE OBJECTS
+;*write_object:
+;
+; Writes an object on the screen (either to draw or erase it)
+;
+; INPUT: 	R9 - Object definition (heigth, width, layout)
 ;*******************************************************************************************
 
 write_object:
@@ -395,14 +413,14 @@ write_object:
 	MOV R3, [R9]			; Stores object width
 	ADD R9, 2			; Gets first pixel colour to use
 
-write_lines:				; Writes a line of pixels
+WRITE_LINES:				; Writes a line of pixels
 	CALL write_line			; Writes the line of pixels that refer to the value of R1
 	ADD R1, 1			; Selects next line to write		
 	SUB R0, 1			; Decreases the remaining object height to write (-1)
 	JZ end_write_lines		; Ends routine if remaining object height to write is 0 (object is written)
 	JMP write_lines			; Repeats write_lines if there are more lines to write
 	
-end_write_lines:
+END_WRITE_LINES:
 	POP R9				; Returns object layout table
 	POP R3
 	POP R1				; Returns object position line
@@ -411,7 +429,13 @@ end_write_lines:
 
 
 ;*********************************************************************************************
-;*WRITE LINE
+;*write_line:
+;
+; Writes a line of pixels determined by the object width to draw
+;
+; INPUT: 	R2 - Object position column
+;		R3 - Object position line
+;		R5 - Object pixel colour
 ;*********************************************************************************************	
 
 write_line:      
@@ -419,7 +443,7 @@ write_line:
 	PUSH R2				; Stores current column in stack
 	PUSH R5				; Stores pixel colour in stack
 	
-write_pixels_line:				
+WRITE_PIXELS_LINE:				
 	MOV R5, [R9]			; Stores pixel colour in R5
 	CALL pick_colour		; Changes colour to 0 if ERASER mode is activated
 	CALL write_pixel		; Writes pixel
@@ -434,7 +458,12 @@ write_pixels_line:
 
 
 ;***************************************************************************************************
-;*WRITE PIXEL AUXILIAR ROUTINES
+;*pick_colour:
+;
+; Changes pixel colour based on PEN_MODE flag value
+;
+; INPUT: 	R5 - Pixel colour to use
+; OUTPUT: 	R5 - Pixel colour to use
 ;***************************************************************************************************
     
 pick_colour:
@@ -444,9 +473,20 @@ pick_colour:
 	JNZ end_colour			; If PEN mode is selected, pixel colour remains the same
 	MOV R5, ERASER			; If ERASER mode is activated, colour 0 is selected
 
-end_colour:
+END_COLOUR:
 	POP R6
 	RET				; Ends routine
+	
+	
+;***************************************************************************************************
+;*write_pixel:
+;
+; Write a pixel on the screen
+;
+; INPUT: 	R1 - Screen line to write on
+;		R2 - Screen column to write on
+;		R5 - Pixel colour to use
+;***************************************************************************************************
     
 write_pixel:
 	MOV [DEF_LINE], R1		; Selects line to write
@@ -456,7 +496,10 @@ write_pixel:
 	
 
 ;**************************************************************************************
-;*KEYPAD: SEARCHES FOR A PRESSED BUTTON
+;*keypad:
+;
+; Verifies if there is a pressed button and, if true, store it in memory.
+; Otherwise resets the button (FFFFH)
 ;**************************************************************************************
 
 keypad:
@@ -469,7 +512,7 @@ keypad:
  	MOV R2, KEY_LIN			; Keypad input in R2
 	MOV R3, KEY_COL			; Keypad output in R3
 
-check_keypad:				; Checks if there is a pressed button
+CHECK_KEYPAD:				; Checks if there is a pressed button
    	MOVB [R2], R1      		; Injects line in keypad lines
    	MOVB R0, [R3]      		; Reads from keypad columns
    	MOV R4, KEY_MASK		; Loads keypad mask to R4
@@ -478,7 +521,7 @@ check_keypad:				; Checks if there is a pressed button
    	CALL button_calc		; Calls the process that calculates the button pressed
   	JMP keypad_end			; Jumps to the end
 
-wait_button:	
+WAIT_BUTTON:	
 	SHR R1, 1		   	; Changes which line is checked
 	JNZ check_keypad		; Jumps if there is still a line to check
 	MOV R1, [BUTTON]
@@ -486,7 +529,7 @@ wait_button:
 	MOV R2, 0FFFFH 			; Moves value -1 (estado normal do botao) to R2
 	MOV [BUTTON], R2		; Changes BUTTON value to FH
 
-keypad_end:
+KEYPAD_END:
 	POP R4				; Restores value to R4
 	POP R3				; Restores value to R3
 	POP R2				; Restores value to R2
@@ -494,36 +537,57 @@ keypad_end:
 	POP R0				; Restores value to R0
 	RET
 
+
 ;***********************************************************************************************************
-;*KEYPAD: DETERMINES WHICH BUTTON WAS PRESSED
+;*button_calc:
+;
+; Calculates pressed line and column, and calls button_formula to determine the pressed button 
+; and store it in memory along with the previous pressed button
+;
+; INPUT: 	R0 - Keypad peripheral output
+;		R1 - Keypad peripheral input (injected line)	
 ;************************************************************************************************************
 
 button_calc:
+	PUSH R0
+	PUSH R1
+	PUSH R2
+	PUSH R3
 	MOV R2, 0		   	; Initializes Lines Counter
 	MOV R3, 0		   	; Initializes Columns Counter
 
-calc_lin:				; Determines which line is being pressed (0-3)
+CALC_LIN:				; Determines which line is being pressed (0-3)
 	SHR R1, 1		   	; Shifts the pressed line 1 bit to the right
 	JZ calc_col		   	; Jumps to calculate which column is being pressed
 	ADD R2, 1		   	; Adds 1 to the line counter
 	JMP calc_lin			; Repeats calc_lin keeps calculating the line
 
-calc_col:				; Determines which column is being pressed (0-3)
+CALC_COL:				; Determines which column is being pressed (0-3)
 	SHR R0, 1		   	; Shifts the pressed column 1 bit to the right
 	JZ button_calc_end		; Jumps to end routine
 	ADD R3, 1		   	; Adds 1 to the column counter
 	JMP calc_col			; Repeats calc_col to keep calculating the column counter
 
-button_calc_end:	
+BUTTON_CALC_END:	
 	CALL button_formula		; Calculates the button that is being pressed
 	MOV R3, [BUTTON]
 	MOV [LAST_BUTTON], R3
 	MOV [BUTTON], R2		; Stores button pressed address in R0
+	POP R3
+	POP R2
+	POP R1
+	POP R0
 	RET
 
 
 ;***********************************************************************************
-;*KEYPAD: PRESSED BUTTON CALCULATOR (R2)
+;* button_formula
+;
+; Calculates the pressed button using the formula 4 * line + column
+;
+; INPUT: 	R2 - Line counter (obtained in CALC_LIN)
+;		R3 - Column counter (obtained in CALC_COL)
+; OUTPUT:	R2 - Pressed button
 ;***********************************************************************************
 
 button_formula:
@@ -535,8 +599,11 @@ button_formula:
 	
 ;***************************************************************************************
 ;* delay: 
-; Adds 1 to DELAY_COUNTER value. If the value reaches MOV_TIMER, the ship moves,the value is reset and DELAY_FLAG is activated and the value is reset.
 ;
+; Adds 1 to DELAY_COUNTER value. If the value reaches MOV_TIMER, the counter is reset and
+; DELAY_FLAG is activated (set to 1) allowing the ship to move
+;
+; INPUT: 	R10 - MOV_TIMER (delay maximum)
 ;***************************************************************************************	
 
 delay:
@@ -575,9 +642,11 @@ end_delay:
 
 
 ;*****************************************************************************************
-;* same_button: Stores value of BUTTON and LAST_BUTTON
-;* OUTPUT: R0 - Stores button pressed
-;	   R1 - Stores last button pressed
+;* same_button: 
+;
+; Stores value of BUTTON and LAST_BUTTON
+; OUTPUT:	R0 - Stores pressed button
+		R1 - Stores previous pressed button
 ;*****************************************************************************************
 
 same_button:

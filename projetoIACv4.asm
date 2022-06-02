@@ -149,7 +149,7 @@ MAIN_CYCLE:
 		
 
 ;********************************************************************************************************
-;-mov_ship
+;* mov_ship
 ;
 ; Moves ship position (accordingly to its delay) if the button pressed is either LEFT or RIGHT
 ;********************************************************************************************************
@@ -203,7 +203,7 @@ SHIP_END:				; Restores stack values in the registers
 
 
 ;********************************************************************************************************
-;-move_met
+;* mov_met
 ;
 ; Moves the meteor position if the pressed button is MET_DOWN
 ;********************************************************************************************************
@@ -240,7 +240,7 @@ MET_END:				; Restores stack values in the registers
 	
 
 ;***********************************************************************************************************************
-;-mov_display:
+;*mov_display:
 ;
 ; Changes the value that the display currently shows
 ;***********************************************************************************************************************
@@ -279,12 +279,12 @@ DISPLAY_END:
 	
 
 ;***********************************************************************************************************************************
-;-test_display_limits:
+;* test_display_limits:
 ;
 ; Changes the display value to either 100 or 0 , if the addition of R7 to the display value surpasses the display limits
-; INPUT:	R1 - value that the display currently shows
-;	 	R7 - display variation
-; OUTPUT:	R1 - new display value
+; INPUT:	R1 - Value that the display currently shows
+;	 	R7 - Display variation
+; OUTPUT:	R1 - New display value
 ;***********************************************************************************************************************************	
 
 test_display_limits:	
@@ -315,7 +315,7 @@ TEST_DISPLAY_LIMITS_END:
 
 
 ;***********************************************************************************************************************
-;-test_ship_limits:
+;* test_ship_limits:
 ;
 ; Changes value of the column variation (CHANGE_COL) to 0 if the ship placement is at either column limits
 ;***********************************************************************************************************************
@@ -352,7 +352,7 @@ TEST_END:				; Restores stack values in the registers
 	
 
 ;*****************************************************************************************
-;-erase_object:
+;* erase_object:
 ;
 ; Erases object written by write_object, by changing PEN_MODE to 0
 ;*****************************************************************************************
@@ -367,7 +367,7 @@ erase_object:
 
 
 ;****************************************************************************************
-;-draw_object:
+;* draw_object:
 ;
 ; Draws object written by write_object, by changing PEN_MODE to 1
 ;****************************************************************************************
@@ -382,7 +382,7 @@ draw_object:
 
 	
 ;******************************************************************************************
-;*placement:
+;* placement:
 ;
 ; Obtains object reference position
 ;
@@ -401,7 +401,7 @@ placement:
 	
 	
 ;*******************************************************************************************	
-;*write_object:
+;* write_object:
 ;
 ; Writes an object on the screen (either to draw or erase it)
 ;
@@ -434,7 +434,7 @@ END_WRITE_LINES:
 
 
 ;*********************************************************************************************
-;*write_line:
+;* write_line:
 ;
 ; Writes a line of pixels determined by the object width to draw
 ;
@@ -463,7 +463,7 @@ WRITE_PIXELS_LINE:
 
 
 ;***************************************************************************************************
-;*pick_colour:
+;* pick_colour:
 ;
 ; Changes pixel colour based on PEN_MODE flag value
 ;
@@ -484,7 +484,7 @@ END_COLOUR:
 	
 	
 ;***************************************************************************************************
-;*write_pixel:
+;* write_pixel:
 ;
 ; Write a pixel on the screen
 ;
@@ -501,7 +501,7 @@ write_pixel:
 	
 
 ;**************************************************************************************
-;*keypad:
+;* keypad:
 ;
 ; Verifies if there is a pressed button and, if true, store it in memory.
 ; Otherwise resets the button (FFFFH)
@@ -544,7 +544,7 @@ KEYPAD_END:
 
 
 ;***********************************************************************************************************
-;*button_calc:
+;* button_calc:
 ;
 ; Calculates pressed line and column, and calls button_formula to determine the pressed button 
 ; and store it in memory along with the previous pressed button

@@ -107,7 +107,7 @@ DELAY_COUNTER:				; Counter until MOV_TIMER is reached and ship moves
 DISPLAY_VALUE:
 	WORD 100H			; Energy display initial value
 	
-FLAG0:
+DELAY_FLAG:
 	WORD 0H
 	
 
@@ -177,7 +177,7 @@ mov_ship:
 CHECK_DELAY:
 	MOV R10, MOV_TIMER
 	CALL delay			
-	MOV R10, [FLAG0]
+	MOV R10, [DELAY_FLAG]
 	CMP R10, 1
 	JNZ SHIP_END			; Jumps to the end of the routine if DELAY_COUNTER is neither 0 nor MOV_TIMER
 	
@@ -534,7 +534,9 @@ button_formula:
 	
 	
 ;***************************************************************************************
-;*DELAY CYCLE
+;* delay: 
+; Adds 1 to DELAY_COUNTER value. If the value reaches MOV_TIMER, the ship moves,the value is reset and DELAY_FLAG is activated and the value is reset.
+;
 ;***************************************************************************************	
 
 delay:
@@ -556,12 +558,12 @@ reset:
 
 activate_flag:
 	MOV R3, 1
-	MOV [FLAG0], R3
+	MOV [DELAY_FLAG], R3
 	JMP end_delay
 
 deactivate_flag:
 	MOV R3, 0
-	MOV [FLAG0], R3
+	MOV [DELAY_FLAG], R3
 	
 end_delay:
 	MOV [DELAY_COUNTER], R2
@@ -573,7 +575,9 @@ end_delay:
 
 
 ;*****************************************************************************************
-;*CHECKS IF THE LAST BUTTON IS THE SAME AS THE CURRENT PRESSED ONE
+;* same_button: Stores value of BUTTON and LAST_BUTTON
+;* OUTPUT: R0 - Stores button pressed
+;	   R1 - Stores last button pressed
 ;*****************************************************************************************
 
 same_button:

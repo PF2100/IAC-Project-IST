@@ -297,19 +297,19 @@ UPPER_LIMIT:
 	MOV R1, [DISPLAY_VALUE]
 	ADD R1, R7			; Adds display variation (5) to R1 (DISPLAY_VALUE)
 	CMP R1, R0
-	JLT test_display_limits_end	; Jumps if DISPLAY_VALUE is lower then upper limit (limit hasn't been reached)
+	JLT TEST_DISPLAY_LIMITS_END	; Jumps if DISPLAY_VALUE is lower then upper limit (limit hasn't been reached)
 	MOV R1, R0			; Sets DISPLAY_VALUE to UPPER_BOUND (limit reached)
-	JMP test_display_limits_end	; Ends routine
+	JMP TEST_DISPLAY_LIMITS_END	; Ends routine
 
 LOWER_LIMIT:
 	MOV R0, LOWER_BOUND
 	MOV R1, [DISPLAY_VALUE]		
 	ADD R1, R7			; Adds display variation (-5) to R1 (DISPLAY_VALUE)
 	CMP R1, R0			
-	JGT test_display_limits_end	; Jumps if DISPLAY_VALUE is greater then lower limit (limit hasn't been reached)
+	JGT TEST_DISPLAY_LIMITS_END	; Jumps if DISPLAY_VALUE is greater then lower limit (limit hasn't been reached)
 	MOV R1, R0			; Sets DISPLAY_VALUE to LOWER_BOUND (limit reached)
 	
-test_display_limits_end:
+TEST_DISPLAY_LIMITS_END:
 	POP R0
 	RET
 
@@ -327,24 +327,24 @@ test_ship_limits:
 	MOV R1, CHANGE_COL		; Stores CHANGE_COL adress
 	MOV R3, [R1]			; Stores column variation of object in R3
 	CMP R3, 0
-	JGT test_right			; Jumps if CHANGE_COL is positive (move right)
+	JGT TEST_RIGHT			; Jumps if CHANGE_COL is positive (move right)
 	
-test_left:
+TEST_LEFT:
 	MOV R3, MIN_COLUMN		; Stores the minimium screen column 
 	CMP R3, R2			; Checks if obejct has reached MIN_COLUMN
-	JNZ test_end			; Ends routine if it hasn't
+	JNZ TEST_END			; Ends routine if it hasn't
 	MOV R3, 0			
 	MOV [R1], R3			; Changes CHANGE_COL to 0 (ship won't move left)
 
-test_right:
+TEST_RIGHT:
 	MOV R3, MAX_COLUMN		; Stores the maximum screen column 
 	ADD R2, 4			; Width is 4, so the last pixel is 4 pixels away from position reference
 	CMP R3, R2			; Checks if obejct has reached MAX_COLUMN
-	JNZ test_end			; Ends routine if it hasn't
+	JNZ TEST_END			; Ends routine if it hasn't
 	MOV R3, 0
 	MOV [R1], R3			; Changes CHANGE_COL to 0 (ship won't move right)
 
-test_end:				; Restores stack values in the registers
+TEST_END:				; Restores stack values in the registers
 	POP R3
 	POP R2
 	POP R1
@@ -422,8 +422,8 @@ WRITE_LINES:				; Writes a line of pixels
 	CALL write_line			; Writes the line of pixels that refer to the value of R1
 	ADD R1, 1			; Selects next line to write		
 	SUB R0, 1			; Decreases the remaining object height to write (-1)
-	JZ end_write_lines		; Ends routine if remaining object height to write is 0 (object is written)
-	JMP write_lines			; Repeats write_lines if there are more lines to write
+	JZ END_WRITE_LINES		; Ends routine if remaining object height to write is 0 (object is written)
+	JMP WRITE_LINES			; Repeats write_lines if there are more lines to write
 	
 END_WRITE_LINES:
 	POP R9				; Returns object layout table
@@ -455,7 +455,7 @@ WRITE_PIXELS_LINE:
 	ADD R9, 2			; Gets next colour (R9 is object layout)
     	ADD R2, 1          	    	; Gets next column
     	SUB R3, 1			; Decreases number of remaining columns to write (-1)
-   	JNZ write_pixels_line      	; Repeats until all width of the object is written (until R3 is 0)
+   	JNZ WRITE_PIXELS_LINE      	; Repeats until all width of the object is written (until R3 is 0)
   	POP R5							
    	POP R2							
    	POP R3
@@ -475,7 +475,7 @@ pick_colour:
 	PUSH R6
 	MOV R6, [PEN_MODE]
 	CMP R6,	ERASER 			; Checks PEN_MODE flag
-	JNZ end_colour			; If PEN mode is selected, pixel colour remains the same
+	JNZ END_COLOUR			; If PEN mode is selected, pixel colour remains the same
 	MOV R5, ERASER			; If ERASER mode is activated, colour 0 is selected
 
 END_COLOUR:
@@ -522,13 +522,13 @@ CHECK_KEYPAD:				; Checks if there is a pressed button
    	MOVB R0, [R3]      		; Reads from keypad columns
    	MOV R4, KEY_MASK		; Loads keypad mask to R4
   	AND R0, R4   			; Isolates the lower nibble
-  	JZ wait_button    		; Jumps if no button is pressed in that line
+  	JZ WAIT_BUTTON    		; Jumps if no button is pressed in that line
    	CALL button_calc		; Calls the process that calculates the button pressed
-  	JMP keypad_end			; Jumps to the end
+  	JMP KEYPAD_END			; Jumps to the end
 
 WAIT_BUTTON:	
 	SHR R1, 1		   	; Changes which line is checked
-	JNZ check_keypad		; Jumps if there is still a line to check
+	JNZ CHECK_KEYPAD		; Jumps if there is still a line to check
 	MOV R1, [BUTTON]
 	MOV [LAST_BUTTON], R1	
 	MOV R2, 0FFFFH 			; Moves value -1 (estado normal do botao) to R2
@@ -563,15 +563,15 @@ button_calc:
 
 CALC_LIN:				; Determines which line is being pressed (0-3)
 	SHR R1, 1		   	; Shifts the pressed line 1 bit to the right
-	JZ calc_col		   	; Jumps to calculate which column is being pressed
+	JZ CALC_COL		   	; Jumps to calculate which column is being pressed
 	ADD R2, 1		   	; Adds 1 to the line counter
-	JMP calc_lin			; Repeats calc_lin keeps calculating the line
+	JMP CALC_LIN			; Repeats calc_lin keeps calculating the line
 
 CALC_COL:				; Determines which column is being pressed (0-3)
 	SHR R0, 1		   	; Shifts the pressed column 1 bit to the right
-	JZ button_calc_end		; Jumps to end routine
+	JZ BUTTON_CALC_END		; Jumps to end routine
 	ADD R3, 1		   	; Adds 1 to the column counter
-	JMP calc_col			; Repeats calc_col to keep calculating the column counter
+	JMP CALC_COL			; Repeats calc_col to keep calculating the column counter
 
 BUTTON_CALC_END:	
 	CALL button_formula		; Calculates the button that is being pressed
@@ -618,26 +618,26 @@ delay:
 	PUSH R10
 	CALL same_button;
 	CMP R0, R1
-	JNZ reset
+	JNZ RESET
 	MOV R2, [DELAY_COUNTER]
 	ADD R2, 1
 	MOV R1, R10
 	CMP R2, R1
-	JNZ deactivate_flag
+	JNZ DEACTIVATE_FLAG
 
-reset:
+RESET:
 	MOV R2, 0
 
-activate_flag:
+ACTIVATE_FLAG:
 	MOV R3, 1
 	MOV [DELAY_FLAG], R3
-	JMP end_delay
+	JMP END_DELAY
 
-deactivate_flag:
+DEACTIVATE_FLAG:
 	MOV R3, 0
 	MOV [DELAY_FLAG], R3
 	
-end_delay:
+END_DELAY:
 	MOV [DELAY_COUNTER], R2
 	POP R10
 	POP R3
@@ -651,7 +651,7 @@ end_delay:
 ;
 ; Stores value of BUTTON and LAST_BUTTON
 ; OUTPUT:	R0 - Stores pressed button
-		R1 - Stores previous pressed button
+;		R1 - Stores previous pressed button
 ;*****************************************************************************************
 
 same_button:

@@ -420,7 +420,7 @@ write_pixels_line:
 	ADD R9, 2			; Gets next colour (R9 is object layout)
     	ADD R2, 1          	    	; Gets next column
     	SUB R3, 1			; Decreases number of remaining columns to write (-1)
-   	JNZ write_pixels_column      	; Repeats until all width of the object is written (until R3 is 0)
+   	JNZ write_pixels_line      	; Repeats until all width of the object is written (until R3 is 0)
   	POP R5							
    	POP R2							
    	POP R3

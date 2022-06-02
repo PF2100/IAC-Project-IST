@@ -107,6 +107,9 @@ DELAY_COUNTER:				; Counter until MOV_TIMER is reached and ship moves
 DISPLAY_VALUE:
 	WORD 100H			; Energy display initial value
 	
+FLAG0:
+	WORD 0H
+	
 
 ;*************************************************************************************************************************
 
@@ -174,6 +177,8 @@ mov_ship:
 CHECK_DELAY:
 	MOV R10, MOV_TIMER
 	CALL delay			
+	MOV R10, [FLAG0]
+	CMP R10, 1
 	JNZ SHIP_END			; Jumps to the end of the routine if DELAY_COUNTER is neither 0 nor MOV_TIMER
 	
 MOVE:
@@ -212,6 +217,7 @@ mov_met:
 	CMP R0, MET_DOWN
 	JNZ MET_END			; Ends routine if the pressed button isn't DOWN
 	CALL same_button		; Checks if the the button pressed is the last pressed button (prior to the current)
+	CMP R0, R1
 	JZ MET_END			; Ends routine if previous instruction is true
 	MOV R8, METEOR_PLACE		; Stores meteor reference position
 	MOV R9, DEF_METEOR		; Stores meteor layout
@@ -252,9 +258,9 @@ mov_display:
 	JMP DISPLAY_END			; Jumps to the end of the routine if button is neither DIS_DOWN nor DIS_UP
 	
 CHECK_DIS_DELAY:
-	MOV R10, DISPLAY_TIMER
-	CALL delay			
-	JNZ DISPLAY_END			; Jumps to the end of the routine if DELAY_COUNTER is neither 0 nor MOV_TIMER
+	CALL same_button
+	CMP R0,R1			
+	JZ DISPLAY_END			; Jumps to the end of the routine if DELAY_COUNTER is neither 0 nor MOV_TIMER
 	
 CHANGE_DISPLAY:
 	CALL test_display_limits	; Checks if the energy has reached display limits (100 upper, 0 lower)
@@ -531,27 +537,40 @@ button_formula:
 ;***************************************************************************************	
 
 delay:
-	PUSH R0
 	PUSH R1
+	PUSH R2	
+	PUSH R3
 	PUSH R10
 	CALL same_button;
-	JNZ reset
-	MOV R0, [DELAY_COUNTER]
-	ADD R0, 1
-	MOV R1, R10
 	CMP R0, R1
-	JNZ end_delay
+	JNZ reset
+	MOV R2, [DELAY_COUNTER]
+	ADD R2, 1
+	MOV R1, R10
+	CMP R2, R1
+	JNZ deactivate_flag
 
 reset:
-	MOV R0, 0
-	CMP R0, 0
+	MOV R2, 0
+
+activate_flag:
+	MOV R3, 1
+	MOV [FLAG0], R3
+	JMP end_delay
+
+deactivate_flag:
+	MOV R3, 0
+	MOV [FLAG0], R3
 	
 end_delay:
-	MOV [DELAY_COUNTER], R0
+	MOV [DELAY_COUNTER], R2
 	POP R10
+	POP R3
+	POP R2
 	POP R1
-	POP R0
 	RET
+
+
 
 
 ;*****************************************************************************************
@@ -559,11 +578,7 @@ end_delay:
 ;*****************************************************************************************
 
 same_button:
-	PUSH R0
-	PUSH R1
 	MOV R0, [BUTTON]		; Stores current pressed button in R0
 	MOV R1, [LAST_BUTTON]		; Stores previous pressed button in R1
-	CMP R0, R1			; Compares if they are the same and activates a flag (if true)
-	POP R1
-	POP R0
 	RET
+

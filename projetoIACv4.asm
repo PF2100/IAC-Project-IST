@@ -6,7 +6,7 @@ KEY_LIN 	EQU 0C000H		; Keyboard Rows
 KEY_COL 	EQU 0E000H		; Keyboard Columns
 KEY_MASK	EQU 0FH			; Isolates the lower nibble from the output of the keypad
 BUTTON		EQU 0900H   		; Stores the pressed button
-LAST_BUTTON 	EQU 0902H		; Stores the last pressed button (prior to the current)
+LAST_BUTTON 	EQU 0902H		; Stores previous pressed button (prior to the current)
 
 ;****DISPLAY****************************************************************************
 

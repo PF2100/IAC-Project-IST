@@ -612,6 +612,7 @@ button_formula:
 ;***************************************************************************************	
 
 delay:
+	PUSH R0
 	PUSH R1
 	PUSH R2	
 	PUSH R3
@@ -643,6 +644,7 @@ END_DELAY:
 	POP R3
 	POP R2
 	POP R1
+	POP R0
 	RET
 
 

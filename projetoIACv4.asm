@@ -216,7 +216,7 @@ mov_met:
 	MOV R0, [BUTTON] 		; Moves button value to R0
 	CMP R0, MET_DOWN
 	JNZ MET_END			; Ends routine if the pressed button isn't DOWN
-	CALL same_button		; Checks if the the button pressed is the last pressed button (prior to the current)
+	CALL same_button		; Stores pressed button in R0 and previous pressed button in R1
 	CMP R0, R1
 	JZ MET_END			; Ends routine if previous instruction is true
 	MOV R8, METEOR_PLACE		; Stores meteor reference position
@@ -260,8 +260,8 @@ mov_display:
 	JMP DISPLAY_END			; Jumps to the end of the routine if button is neither DIS_DOWN nor DIS_UP
 	
 CHECK_DIS_DELAY:
-	CALL same_button
-	CMP R0,R1			
+	CALL same_button		; Stores pressed button in R0 and previous pressed button in R1
+	CMP R0, R1			; Checks if the buttons are the same
 	JZ DISPLAY_END			; Jumps to the end of the routine if DELAY_COUNTER is neither 0 nor MOV_TIMER
 	
 CHANGE_DISPLAY:
@@ -616,9 +616,9 @@ delay:
 	PUSH R2	
 	PUSH R3
 	PUSH R10
-	CALL same_button;
-	CMP R0, R1
-	JNZ RESET
+	CALL same_button		; Stores pressed button in R0 and previous pressed button in R1
+	CMP R0, R1			; Checks if the buttons are the same
+	JNZ RESET			; Resets counter if buttons are not the same
 	MOV R2, [DELAY_COUNTER]
 	ADD R2, 1
 	MOV R1, R10
@@ -626,7 +626,7 @@ delay:
 	JNZ DEACTIVATE_FLAG
 
 RESET:
-	MOV R2, 0
+	MOV R2, 0			; Sets counter back to 0
 
 ACTIVATE_FLAG:
 	MOV R3, 1

@@ -620,26 +620,25 @@ delay:
 	CALL same_button		; Stores pressed button in R0 and previous pressed button in R1
 	CMP R0, R1			; Checks if the buttons are the same
 	JNZ RESET			; Resets counter if buttons are not the same
-	MOV R2, [DELAY_COUNTER]
-	ADD R2, 1
-	MOV R1, R10
-	CMP R2, R1
+	MOV R2, [DELAY_COUNTER]		; Stores DELAY_COUNTER value in R2
+	ADD R2, 1			; Increments the delay by 1			
+	CMP R2, R10			; Checks if delay has reached MOV_TIMER (delay maximum)
 	JNZ DEACTIVATE_FLAG
 
 RESET:
 	MOV R2, 0			; Sets counter back to 0
 
-ACTIVATE_FLAG:
-	MOV R3, 1
+ACTIVATE_FLAG:				; Activates flag so the object can move
+	MOV R3, 1			
 	MOV [DELAY_FLAG], R3
 	JMP END_DELAY
 
-DEACTIVATE_FLAG:
+DEACTIVATE_FLAG:			; Deactivates flag to prevent object from moving
 	MOV R3, 0
 	MOV [DELAY_FLAG], R3
 	
-END_DELAY:
-	MOV [DELAY_COUNTER], R2
+END_DELAY:			
+	MOV [DELAY_COUNTER], R2		; Updates the DELAY_COUNTER value
 	POP R10
 	POP R3
 	POP R2

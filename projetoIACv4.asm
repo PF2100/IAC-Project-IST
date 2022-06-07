@@ -19,9 +19,10 @@ LAST_BUTTON 	EQU 0902H		; Stores previous pressed button (prior to the current)
 ;****DISPLAY****************************************************************************
 
 DISPLAY		EQU 0A000H		; Display adress
-UPPER_BOUND	EQU 0100H		; Display upper bound (energy)
+UPPER_BOUND	EQU 0064H		; Display upper bound (energy)
 LOWER_BOUND	EQU 0000H		; Display lower bound (energy)
 DISPLAY_TIMER 	EQU 0100H		; Display delay between pressing button and changing energy value
+HEXTODEC_CONST	EQU 000AH		; Display hexadecimal to decimal constant
 
 ;****KEYPAD COMMANDS*******************************************************************
 
@@ -80,6 +81,7 @@ METEOR_COLOUR		EQU 0 		; Hexadecimal value of the colour #
 
 ;*************************************************************************************************************************
 
+
 PLACE 1000H
 STACK 100H
 
@@ -89,10 +91,26 @@ DEF_SHIP:				; Ship layout (colour of each pixel, height, width)
 	WORD HEIGHT, WIDTH
 	WORD 0, 0, BLUE, 0, 0, 0, RED, WHITE, RED, 0, DARKRED, WHITE, WHITE, WHITE, DARKRED, WHITE, 0, WHITE, 0, WHITE
 	
+;**********METEOR DIMENSIONS**********************************************************************************************
+	
 DEF_METEOR:
 	WORD METEOR_HEIGHT, METEOR_WIDTH
 	WORD 0, 0, RED, RED, 0, 0, 0, RED, RED, RED, RED, 0, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED,
 		0, RED, RED, RED, RED, 0, 0, 0, RED, RED, 0, 0
+		
+;*************************************************************************************************************************
+
+interruption_table:
+	WORD meteor_interruption	; meteor interruption routine
+	WORD missile_interruption	; missile interruption routine
+	WORD energy_interruption	; energy interruption routine	
+		
+;**************************************************************************************************************************
+
+
+
+	
+		
 	
 SHIP_PLACE:				; Reference to the position of ship 
 	BYTE LINE, COLUMN		; First byte of the word stores the line and the second one the column
@@ -105,7 +123,7 @@ CHANGE_COL:				; Stores column variation of the position of the object
 	
 CHANGE_LINE:				; Stores line variation of the position of the object
 	WORD 0H
-	
+
 PEN_MODE:				; Flag used to either draw or erase pixels by draw_object and erase_object
 	WORD 0H
 	
@@ -113,11 +131,23 @@ DELAY_COUNTER:				; Counter until MOV_TIMER is reached and ship moves
 	WORD 0H
 
 DISPLAY_VALUE:
-	WORD 100H			; Energy display initial value
-	
-DELAY_FLAG:				; Ship movement delay flag
+	WORD UPPER_BOUND		; Energy display initial value
+
+DISPLAY_VARIATION:
 	WORD 0H
 	
+DELAY_FLAG:				; Ship movement delay flag
+
+	WORD 0H
+
+METEOR_INTERRUPTION_FLAG:
+	WORD 0H
+
+MISSILE_INTERRUPTION_FLAG:
+	WORD 0H
+	
+ENERGY_INTERRUPTION_FLAG:
+	WORD 0H
 
 ;*************************************************************************************************************************
 
@@ -125,13 +155,22 @@ PLACE 0H
 
 
 INITIALIZER:
+	MOV BTE, interruption_table
 	MOV SP, STACK_INIT
 	MOV R0, 0
+	EI0					; Allows meteor_interruption 
+	EI1					; Allows missile_interruption 
+	EI2					; Allows energy_interruption 
+	EI					; Allows all interruptions
+
+	
 	MOV [DEL_WARNING], R0		; Deletes no background warning (R0 value is irrelevant)
 	MOV [DEL_SCREEN], R0		; Deletes all drawn pixels (R0 value is irrelevant)
     	MOV [SELECT_BACKGROUND], R0	; Selects background
-    	MOV R0, [DISPLAY_VALUE]		; Stores energy display initial value in R0
+    	MOV R0, 0100H			; Stores energy display initial value in R0
 	MOV [DISPLAY], R0		; Initializes display
+	MOV R0, UPPER_BOUND
+	MOV [DISPLAY_VALUE], R0
 
 
 BUILD_SHIP:
@@ -150,7 +189,7 @@ BUILD_METEOR:
 
 MAIN_CYCLE:
 	CALL keypad			; Checks if there is a pressed button
-	CALL mov_display		; Checks if the pressed button changes the display
+	CALL display_decrease		; Checks if the pressed button changes the display
 	CALL mov_met			; Checks if the pressed button changes the meteor position
 	CALL mov_ship			; Checks if the pressed button changes the ship position
 	JMP MAIN_CYCLE
@@ -245,10 +284,29 @@ MET_END:				; Restores stack values in the registers
 	POP R7
 	POP R0
 	RET
+
+;***********************************************************************************************************************
+;*display allower
+;***********************************************************************************************************************
+
+display_decrease:
+	PUSH R1	
+	MOV R1 , [ENERGY_INTERRUPTION_FLAG]
+	CMP R1, 1
+	JNZ DISPLAY_DELAY_END
+	MOV R1, -5
+	MOV [DISPLAY_VARIATION], R1
+	CALL mov_display
+	MOV R1, 0
+	MOV [ENERGY_INTERRUPTION_FLAG], R1 
+
+DISPLAY_DELAY_END:
+	POP R1
+	RET
 	
 
 ;***********************************************************************************************************************
-;*mov_display:
+;*moves_display:
 ;
 ; Changes the value that the display currently shows
 ;***********************************************************************************************************************
@@ -258,25 +316,13 @@ mov_display:
 	PUSH R1
 	PUSH R2
 	PUSH R7
-	MOV R0, [BUTTON] 		; Stores pressed button in R0
-	MOV R7, -5			; Sets energy variation to -5
-	CMP R0,	DIS_DOWN 		; Compares if the pressed button is DIS_DOWN button
-	JZ CHECK_DIS_DELAY		; Jumps if button is DIS_DOWN
-	MOV R7, 5			; Sets energy variation to 5
-	CMP R0, DIS_UP			; Compares if the pressed button is DIS_UP button
-	JZ CHECK_DIS_DELAY		; Jumps if button is DIS_UP
-	JMP DISPLAY_END			; Jumps to the end of the routine if button is neither DIS_DOWN nor DIS_UP
-	
-CHECK_DIS_DELAY:
-	CALL same_button		; Stores pressed button in R0 and previous pressed button in R1
-	CMP R0, R1			; Checks if the buttons are the same
-	JZ DISPLAY_END			; Jumps to the end of the routine if DELAY_COUNTER is neither 0 nor MOV_TIMER
+	MOV R7, [DISPLAY_VARIATION]	; R7 stores the energy variation
 	
 CHANGE_DISPLAY:
 	CALL test_display_limits	; Checks if the energy has reached display limits (100 upper, 0 lower)
-	;CALL convert_hex_to_dec
+	MOV [DISPLAY_VALUE], R1		;
+	CALL convert_hex_to_dec		;
 	MOV [DISPLAY], R1		; Sets display to R1
-	MOV [DISPLAY_VALUE], R1		; Stores new display value in memory
 	
 DISPLAY_END:
 	POP R7
@@ -297,31 +343,51 @@ DISPLAY_END:
 
 test_display_limits:	
 	PUSH R0
-	CMP R7, -5			; Checks if display variation is -5 ( Muda -5 para constante de variacao de energia)
-	JZ LOWER_LIMIT			; Jumps if DIS_DOWN is pressed
+	CMP R7, -5			: (MUDAR VALOR PARA CONSTANTE) 
+	JZ LOWER_LIMIT			;
 	
 UPPER_LIMIT:
-	MOV R0, UPPER_BOUND
-	MOV R1, [DISPLAY_VALUE]
+	MOV R0, UPPER_BOUND		;
+	MOV R1, [DISPLAY_VALUE]		;
 	ADD R1, R7			; Adds display variation (5) to R1 (DISPLAY_VALUE)
-	CMP R1, R0
+	CMP R1, R0			;
 	JLT TEST_DISPLAY_LIMITS_END	; Jumps if DISPLAY_VALUE is lower then upper limit (limit hasn't been reached)
 	MOV R1, R0			; Sets DISPLAY_VALUE to UPPER_BOUND (limit reached)
 	JMP TEST_DISPLAY_LIMITS_END	; Ends routine
 
 LOWER_LIMIT:
-	MOV R0, LOWER_BOUND
-	MOV R1, [DISPLAY_VALUE]		
+	MOV R0, LOWER_BOUND		;
+	MOV R1, [DISPLAY_VALUE]		;
 	ADD R1, R7			; Adds display variation (-5) to R1 (DISPLAY_VALUE)
-	CMP R1, R0			
+	CMP R1, R0			; 
 	JGT TEST_DISPLAY_LIMITS_END	; Jumps if DISPLAY_VALUE is greater then lower limit (limit hasn't been reached)
-	MOV R1, R0			; Sets DISPLAY_VALUE to LOWER_BOUND (limit reached)
+	MOV R1, R0					; Sets DISPLAY_VALUE to LOWER_BOUND (limit reached)
 	
 TEST_DISPLAY_LIMITS_END:
 	POP R0
 	RET
+	
+;***********************************************************************************************************************
+;*
+;*
+;***********************************************************************************************************************
 
+convert_hex_to_dec: 				; converto numeros hexadecimais (até 63H) para decimal
+	PUSH R2					; converte o numero em R1, e deixa-o em R1
+	PUSH R3
 
+	MOV  R3, HEXTODEC_CONST
+	MOV  R2, R1
+	DIV  R1, R3 				; coloca o algarismo das dezenas em decimal em R1
+	MOD  R2, R3 				; coloca o algarismo das unidades em decimal em R2
+
+	SHL  R1, 4
+	ADD   R1, R2					; coloca o numero em decimal em R1
+
+	POP  R3
+	POP  R2
+	RET
+	
 ;***********************************************************************************************************************
 ;* test_ship_limits:
 ;
@@ -539,7 +605,7 @@ WAIT_BUTTON:
 	JNZ CHECK_KEYPAD		; Jumps if there is still a line to check
 	MOV R1, [BUTTON]
 	MOV [LAST_BUTTON], R1	
-	MOV R2, 0FFFFH 			; Moves value -1 (estado normal do botao) to R2 (MUDA PARA CONSTANTE O VALOR DE RESET)
+	MOV R2, 0FFFFH 			; Moves value -1 (estado normal do botao) to R2 ( MUDAR PARA CONSTANTE)
 	MOV [BUTTON], R2		; Changes BUTTON value to FH
 
 KEYPAD_END:
@@ -604,7 +670,8 @@ BUTTON_CALC_END:
 ;***********************************************************************************
 
 button_formula:
-	SHL R2 , 2			; Multiples the line counter by 4 
+	MOV R0, 4
+	MUL R2, R0			; Multiples the line counter by 4 
 	ADD R2, R3			; Adds the column counter to calculate the button pressed
 	RET
 	
@@ -666,4 +733,23 @@ same_button:
 	MOV R0, [BUTTON]		; Stores current pressed button in R0
 	MOV R1, [LAST_BUTTON]		; Stores previous pressed button in R1
 	RET
+	
+;*****************************************************************************************
+;*
+;*INTERRUPTIONS
+;*
+;*****************************************************************************************
 
+meteor_interruption:
+	RFE
+	
+missile_interruption:
+	RFE
+
+
+energy_interruption:
+	PUSH R0
+	MOV R0, 1
+	MOV [ENERGY_INTERRUPTION_FLAG], R0
+	POP R0
+	RFE 

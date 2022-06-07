@@ -297,7 +297,7 @@ DISPLAY_END:
 
 test_display_limits:	
 	PUSH R0
-	CMP R7, -5			; Checks if display variation is -5
+	CMP R7, -5			; Checks if display variation is -5 ( Muda -5 para constante de variacao de energia)
 	JZ LOWER_LIMIT			; Jumps if DIS_DOWN is pressed
 	
 UPPER_LIMIT:
@@ -539,7 +539,7 @@ WAIT_BUTTON:
 	JNZ CHECK_KEYPAD		; Jumps if there is still a line to check
 	MOV R1, [BUTTON]
 	MOV [LAST_BUTTON], R1	
-	MOV R2, 0FFFFH 			; Moves value -1 (estado normal do botao) to R2
+	MOV R2, 0FFFFH 			; Moves value -1 (estado normal do botao) to R2 (MUDA PARA CONSTANTE O VALOR DE RESET)
 	MOV [BUTTON], R2		; Changes BUTTON value to FH
 
 KEYPAD_END:
@@ -604,8 +604,7 @@ BUTTON_CALC_END:
 ;***********************************************************************************
 
 button_formula:
-	MOV R0, 4
-	MUL R2, R0			; Multiples the line counter by 4 
+	SHL R2 , 2			; Multiples the line counter by 4 
 	ADD R2, R3			; Adds the column counter to calculate the button pressed
 	RET
 	

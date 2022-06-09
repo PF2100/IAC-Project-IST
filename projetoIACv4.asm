@@ -15,14 +15,16 @@ KEY_COL 	EQU 0E000H		; Keyboard Columns
 KEY_MASK	EQU 0FH			; Isolates the lower nibble from the output of the keypad
 BUTTON		EQU 0900H   		; Stores the pressed button
 LAST_BUTTON 	EQU 0902H		; Stores previous pressed button (prior to the current)
+NO_BUTTON	EQU 0FFFFH		; Value of no pressed button
 
 ;****DISPLAY****************************************************************************
 
-DISPLAY		EQU 0A000H		; Display adress
-UPPER_BOUND	EQU 0064H		; Display upper bound (energy)
-LOWER_BOUND	EQU 0000H		; Display lower bound (energy)
-DISPLAY_TIMER 	EQU 0100H		; Display delay between pressing button and changing energy value
-HEXTODEC_CONST	EQU 000AH		; Display hexadecimal to decimal constant
+DISPLAY			EQU 0A000H		; Display adress
+UPPER_BOUND		EQU 0064H		; Display upper bound (energy)
+LOWER_BOUND		EQU 0000H		; Display lower bound (energy)
+DISPLAY_TIMER 		EQU 0100H		; Display delay between pressing button and changing energy value
+HEXTODEC_CONST		EQU 000AH		; Display hexadecimal to decimal constant
+DISPLAY_DECREASE	EQU -5			; Display decrease value 
 
 ;****KEYPAD COMMANDS*******************************************************************
 
@@ -68,6 +70,12 @@ WHITE			EQU 0FFFDH	; Hexadecimal ARGB value of the colour WHITE
 RED			EQU 0FE00H	; Hexadecimal ARGB value of the colour RED
 DARKRED			EQU 0FE33H	; Hexadecimal ARGB value of the colour DARKRED
 BLUE			EQU 0F48FH	; Hexadecimal ARGB value of the colour BLUE
+;***MISSILE****************************************************************************************************************
+
+MISSILE_WIDTH		EQU 1
+MISSILE_HEIGHT		EQU 1
+MISSILE_LINE		EQU 0
+MISSILE_COLUMN		EQU 0
 
 
 ;***METEORS*************************************************************************************************************
@@ -100,6 +108,13 @@ DEF_METEOR:
 		
 ;*************************************************************************************************************************
 
+DEF_MISSILE:
+	WORD MISSILE_HEIGHT, MISSILE_WIDTH
+	WORD RED
+
+
+;*************************************************************************************************************************
+
 interruption_table:
 	WORD meteor_interruption	; meteor interruption routine
 	WORD missile_interruption	; missile interruption routine
@@ -112,8 +127,11 @@ interruption_table:
 	
 		
 	
-SHIP_PLACE:				; Reference to the position of ship 
-	BYTE LINE, COLUMN		; First byte of the word stores the line and the second one the column
+SHIP_PLACE:					; Reference to the position of ship 
+	BYTE LINE, COLUMN			; First byte of the word stores the line and the second one the column
+	
+MISSILE_PLACE:					; Reference to the position of the missile 
+	BYTE MISSILE_LINE, MISSILE_COLUMN	; First byte of the word stores the line and the second one the column
 
 METEOR_PLACE:
 	BYTE METEOR_LINE, METEOR_COLUMN	; First byte of the word stores the line and the second one the column
@@ -190,6 +208,7 @@ BUILD_METEOR:
 MAIN_CYCLE:
 	CALL keypad			; Checks if there is a pressed button
 	CALL display_decrease		; Checks if the pressed button changes the display
+	CALL shoot_missile
 	CALL mov_met			; Checks if the pressed button changes the meteor position
 	CALL mov_ship			; Checks if the pressed button changes the ship position
 	JMP MAIN_CYCLE
@@ -247,8 +266,64 @@ SHIP_END:				; Restores stack values in the registers
 	POP R7
 	POP R0
 	RET
+;********************************************************************************************************
+;
+;********************************************************************************************************
 
+shoot_missile:
+	PUSH R0
+	PUSH R1
+	PUSH R2
+	PUSH R8
+	PUSH R9
+	MOV R0 , [BUTTON]
+	MOV R1 , SHOOT			
+	CMP R0, R1		; Checks if the pressed button is SHOOT
+	JNZ SHOOT_MISSILE_END	; Jumps to end of routine if the last instruction is false
+	
+GET_MISSILE_POSITION:
+	MOV R0, [MISSILE_PLACE]	;
+	CMP R0, 0		;
+	JNZ SHOOT_MISSILE_END	;
+	
+DRAW_MISSILE:
+	MOV R8, SHIP_PLACE
+	Call placement
+	ADD R1, -1		; Gets line to go higher
+	ADD R2, 2		; Adds 2 to obtain collumn that is the middle of the ship
+	MOV R9 , DEF_MISSILE
+	Call draw_object
+	OR R1 , R2
+	MOV [MISSILE_PLACE] , R1
+		
+SHOOT_MISSILE_END:
+	POP R9
+	POP R8
+	POP R2
+	POP R1
+	POP R0
+	RET
+	
+;********************************************************************************************************
+;VERTICAL MOVEMENT
+;********************************************************************************************************		
 
+mov_vertical:
+	CALL placement			; Stores meteor reference position (Line in R1 and Column in R2)
+	CALL erase_object		; Deletes object from current position
+	ADD R1, 1			; Adds line variation to the new reference position of meteor
+	MOVB [R8], R1			; Changes line position of the meteor
+	CALL draw_object		; Draws object in new position
+	MOV R1, 0
+	MOV [PLAY_SOUND_VIDEO], R1
+	
+mov_vertical_end:				; Restores stack values in the registers
+	POP R9
+	POP R8
+	POP R7
+	POP R0
+	RET
+	
 ;********************************************************************************************************
 ;* mov_met
 ;
@@ -294,7 +369,7 @@ display_decrease:
 	MOV R1 , [ENERGY_INTERRUPTION_FLAG]
 	CMP R1, 1
 	JNZ DISPLAY_DELAY_END
-	MOV R1, -5
+	MOV R1, DISPLAY_DECREASE
 	MOV [DISPLAY_VARIATION], R1
 	CALL mov_display
 	MOV R1, 0
@@ -342,15 +417,15 @@ DISPLAY_END:
 ;***********************************************************************************************************************************	
 
 test_display_limits:	
-	PUSH R0
-	CMP R7, -5			: (MUDAR VALOR PARA CONSTANTE) 
+	PUSH R0				;
+	CMP R7, DISPLAY_DECREASE	;
 	JZ LOWER_LIMIT			;
 	
 UPPER_LIMIT:
-	MOV R0, UPPER_BOUND		;
-	MOV R1, [DISPLAY_VALUE]		;
+	MOV R0, UPPER_BOUND
+	MOV R1, [DISPLAY_VALUE]
 	ADD R1, R7			; Adds display variation (5) to R1 (DISPLAY_VALUE)
-	CMP R1, R0			;
+	CMP R1, R0
 	JLT TEST_DISPLAY_LIMITS_END	; Jumps if DISPLAY_VALUE is lower then upper limit (limit hasn't been reached)
 	MOV R1, R0			; Sets DISPLAY_VALUE to UPPER_BOUND (limit reached)
 	JMP TEST_DISPLAY_LIMITS_END	; Ends routine
@@ -361,7 +436,7 @@ LOWER_LIMIT:
 	ADD R1, R7			; Adds display variation (-5) to R1 (DISPLAY_VALUE)
 	CMP R1, R0			; 
 	JGT TEST_DISPLAY_LIMITS_END	; Jumps if DISPLAY_VALUE is greater then lower limit (limit hasn't been reached)
-	MOV R1, R0					; Sets DISPLAY_VALUE to LOWER_BOUND (limit reached)
+	MOV R1, R0			; Sets DISPLAY_VALUE to LOWER_BOUND (limit reached)
 	
 TEST_DISPLAY_LIMITS_END:
 	POP R0
@@ -375,15 +450,12 @@ TEST_DISPLAY_LIMITS_END:
 convert_hex_to_dec: 				; converto numeros hexadecimais (até 63H) para decimal
 	PUSH R2					; converte o numero em R1, e deixa-o em R1
 	PUSH R3
-
 	MOV  R3, HEXTODEC_CONST
-	MOV  R2, R1
-	DIV  R1, R3 				; coloca o algarismo das dezenas em decimal em R1
-	MOD  R2, R3 				; coloca o algarismo das unidades em decimal em R2
-
-	SHL  R1, 4
-	ADD   R1, R2					; coloca o numero em decimal em R1
-
+	MOV  R2, R1				; Saves the display value in R2
+	DIV  R1, R3 				; Stores the tens digit of the display value in R1
+	MOD  R2, R3 				; Stores the units digit of the display value in R2
+	SHL  R1, 4				; Moves the tens value of the display value to the second hexadecimal digit
+	ADD  R1, R2				; Adds the units digit to R1
 	POP  R3
 	POP  R2
 	RET
@@ -605,7 +677,7 @@ WAIT_BUTTON:
 	JNZ CHECK_KEYPAD		; Jumps if there is still a line to check
 	MOV R1, [BUTTON]
 	MOV [LAST_BUTTON], R1	
-	MOV R2, 0FFFFH 			; Moves value -1 (estado normal do botao) to R2 ( MUDAR PARA CONSTANTE)
+	MOV R2, NO_BUTTON		; Moves value -1 (estado normal do botao) to R2
 	MOV [BUTTON], R2		; Changes BUTTON value to FH
 
 KEYPAD_END:
@@ -670,8 +742,7 @@ BUTTON_CALC_END:
 ;***********************************************************************************
 
 button_formula:
-	MOV R0, 4
-	MUL R2, R0			; Multiples the line counter by 4 
+	SHL R2, 2			; Multiples the line counter by 4 
 	ADD R2, R3			; Adds the column counter to calculate the button pressed
 	RET
 	
@@ -741,10 +812,18 @@ same_button:
 ;*****************************************************************************************
 
 meteor_interruption:
-	RFE
+	PUSH R0
+	MOV R0, 1
+	MOV [METEOR_INTERRUPTION_FLAG], R0
+	POP R0
+	RFE 
 	
 missile_interruption:
-	RFE
+	PUSH R0
+	MOV R0, 1
+	MOV [MISSILE_INTERRUPTION_FLAG], R0
+	POP R0
+	RFE 
 
 
 energy_interruption:

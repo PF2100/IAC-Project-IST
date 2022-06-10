@@ -76,6 +76,7 @@ MISSILE_WIDTH		EQU 1
 MISSILE_HEIGHT		EQU 1
 MISSILE_LINE		EQU 0
 MISSILE_COLUMN		EQU 0
+MISSILE_LINE_MAX	EQU 15
 
 
 ;***METEORS*************************************************************************************************************
@@ -133,6 +134,9 @@ SHIP_PLACE:					; Reference to the position of ship
 MISSILE_PLACE:					; Reference to the position of the missile 
 	BYTE MISSILE_LINE, MISSILE_COLUMN	; First byte of the word stores the line and the second one the column
 
+MISSILE_STEPS:
+	WORD 0H
+
 METEOR_PLACE:
 	BYTE METEOR_LINE, METEOR_COLUMN	; First byte of the word stores the line and the second one the column
 	
@@ -141,6 +145,7 @@ CHANGE_COL:				; Stores column variation of the position of the object
 	
 CHANGE_LINE:				; Stores line variation of the position of the object
 	WORD 0H
+	
 
 PEN_MODE:				; Flag used to either draw or erase pixels by draw_object and erase_object
 	WORD 0H
@@ -173,13 +178,13 @@ PLACE 0H
 
 
 INITIALIZER:
-	MOV BTE, interruption_table
-	MOV SP, STACK_INIT
+	MOV BTE, interruption_table	; Iniciates BTE in interruption table
+	MOV SP, STACK_INIT		; Iniciates SP for the stack
 	MOV R0, 0
-	EI0					; Allows meteor_interruption 
-	EI1					; Allows missile_interruption 
-	EI2					; Allows energy_interruption 
-	EI					; Allows all interruptions
+	EI0				; Allows meteor_interruption 
+	EI1				; Allows missile_interruption 
+	EI2				; Allows energy_interruption 
+	EI				; Allows all interruptions
 
 	
 	MOV [DEL_WARNING], R0		; Deletes no background warning (R0 value is irrelevant)
@@ -208,7 +213,7 @@ BUILD_METEOR:
 MAIN_CYCLE:
 	CALL keypad			; Checks if there is a pressed button
 	CALL display_decrease		; Checks if the pressed button changes the display
-	CALL shoot_missile
+	CALL mov_missile		; Checks if missile is to be shot , moved , or destroyed
 	CALL mov_met			; Checks if the pressed button changes the meteor position
 	CALL mov_ship			; Checks if the pressed button changes the ship position
 	JMP MAIN_CYCLE
@@ -266,8 +271,12 @@ SHIP_END:				; Restores stack values in the registers
 	POP R7
 	POP R0
 	RET
+	
+	
+
 ;********************************************************************************************************
-;
+;*shoot_missile
+; Shoots a missile if there isnt one flying already
 ;********************************************************************************************************
 
 shoot_missile:
@@ -276,25 +285,26 @@ shoot_missile:
 	PUSH R2
 	PUSH R8
 	PUSH R9
-	MOV R0 , [BUTTON]
-	MOV R1 , SHOOT			
+	MOV R0 , [BUTTON]	; Stores pressed button 
+	MOV R1 , SHOOT		; Stores SHOOT button
 	CMP R0, R1		; Checks if the pressed button is SHOOT
 	JNZ SHOOT_MISSILE_END	; Jumps to end of routine if the last instruction is false
 	
 GET_MISSILE_POSITION:
-	MOV R0, [MISSILE_PLACE]	;
-	CMP R0, 0		;
-	JNZ SHOOT_MISSILE_END	;
+	MOV R0, [MISSILE_PLACE]	; Stores missile placement
+	CMP R0, 0		; Verifies if there it is 0 ( there is no missile flying)
+	JNZ SHOOT_MISSILE_END	; If no missile is in the air , end routine
 	
 DRAW_MISSILE:
-	MOV R8, SHIP_PLACE
-	Call placement
-	ADD R1, -1		; Gets line to go higher
-	ADD R2, 2		; Adds 2 to obtain collumn that is the middle of the ship
-	MOV R9 , DEF_MISSILE
-	Call draw_object
-	OR R1 , R2
-	MOV [MISSILE_PLACE] , R1
+	MOV R8, SHIP_PLACE	; Stores Ship position
+	CALL placement		; Stores ship reference position (Line in R1 and Column in R2)
+	ADD R1, -1		; Adds-1 to obtain line above the ship
+	ADD R2, 2		; Adds 2 to obtain middle reference collumn of the ship
+	MOV R9 , DEF_MISSILE	; Stores missile layout
+	Call draw_object	; draws object
+	SHL R1, 8
+	OR R1 , R2		; Uses or function to store line and collumn together in R1
+	MOV [MISSILE_PLACE] , R1; Stores in memory the missile reference position
 		
 SHOOT_MISSILE_END:
 	POP R9
@@ -303,25 +313,80 @@ SHOOT_MISSILE_END:
 	POP R1
 	POP R0
 	RET
+;********************************************************************************************************
+;MISSILE MOVEMENT
+;********************************************************************************************************
+
+mov_missile:
+	PUSH R0
+	PUSH R1
+	PUSH R2
+	PUSH R8
+	PUSH R9
+	MOV R9, DEF_MISSILE
+	MOV R8, MISSILE_PLACE
+	CALL shoot_missile
+	CAll placement
+	CMP R1 , 0
+	JZ MOV_MISSILE_END
+
+ALLOW_MISSILE_MOV:
+	MOV R0 , [MISSILE_INTERRUPTION_FLAG]
+	CMP R0, 1
+	JNZ MOV_MISSILE_END
+
+MOVE_DRAW_MISSILE:
+	MOV R0 , -1
+	MOV [CHANGE_COL], R0
+	CALL mov_vertical
+	MOV R0 , 0
+	MOV [MISSILE_INTERRUPTION_FLAG], R0
+	
+	
+MISSILE_LIMITS:
+	CALL placement
+	MOV R0, MISSILE_LINE_MAX
+	CMP R1 , R0
+	JNZ MOV_MISSILE_END
+	CALL erase_object
+	MOV R0, 0
+	MOV [R8], R0
+
+
+MOV_MISSILE_END:
+	POP R9
+	POP R8
+	POP R2
+	POP R1
+	POP R0
+	RET
+	
+	
+	
+	
+	
 	
 ;********************************************************************************************************
 ;VERTICAL MOVEMENT
 ;********************************************************************************************************		
 
 mov_vertical:
+	PUSH R1
+	PUSH R7
+	PUSH R8
+	MOV R7 , [CHANGE_COL]
 	CALL placement			; Stores meteor reference position (Line in R1 and Column in R2)
 	CALL erase_object		; Deletes object from current position
-	ADD R1, 1			; Adds line variation to the new reference position of meteor
+	ADD R1, R7			; Adds line variation to the new reference position of meteor
 	MOVB [R8], R1			; Changes line position of the meteor
 	CALL draw_object		; Draws object in new position
 	MOV R1, 0
 	MOV [PLAY_SOUND_VIDEO], R1
 	
-mov_vertical_end:				; Restores stack values in the registers
-	POP R9
+mov_vertical_end:			; Restores stack values in the registers
 	POP R8
 	POP R7
-	POP R0
+	POP R1
 	RET
 	
 ;********************************************************************************************************
@@ -368,14 +433,14 @@ display_decrease:
 	PUSH R1	
 	MOV R1 , [ENERGY_INTERRUPTION_FLAG]
 	CMP R1, 1
-	JNZ DISPLAY_DELAY_END
+	JNZ DISPLAY_DECREASE_END
 	MOV R1, DISPLAY_DECREASE
 	MOV [DISPLAY_VARIATION], R1
 	CALL mov_display
 	MOV R1, 0
 	MOV [ENERGY_INTERRUPTION_FLAG], R1 
 
-DISPLAY_DELAY_END:
+DISPLAY_DECREASE_END:
 	POP R1
 	RET
 	
@@ -395,9 +460,9 @@ mov_display:
 	
 CHANGE_DISPLAY:
 	CALL test_display_limits	; Checks if the energy has reached display limits (100 upper, 0 lower)
-	MOV [DISPLAY_VALUE], R1		;
-	CALL convert_hex_to_dec		;
-	MOV [DISPLAY], R1		; Sets display to R1
+	MOV [DISPLAY_VALUE], R1		; Stores in memory value of display(R1)
+	CALL convert_hex_to_dec		; Converts hexadecimal value of display do decimal
+	MOV [DISPLAY], R1		; Sets display to correspondant decimal value
 	
 DISPLAY_END:
 	POP R7

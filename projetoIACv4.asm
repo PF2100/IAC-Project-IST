@@ -47,6 +47,7 @@ DEF_PIXEL    		EQU 6012H	; Write pixel command adress
 DEL_WARNING     	EQU 6040H	; Ignore no background warning command adress
 DEL_SCREEN		EQU 6002H	; Delete all pixels drawn command adress
 SELECT_BACKGROUND 	EQU 6042H	; Select background command adress
+SELECT_SCREEN		EQU 6004H	; Select pixel screen
 PLAY_SOUND_VIDEO	EQU 605AH	;
 
 
@@ -86,7 +87,7 @@ METEOR_COLUMN		EQU 16		; Meteor initial column
 METEOR_HEIGHT		EQU 6
 METEOR_WIDTH		EQU 6
 METEOR_COLOUR		EQU 0 		; Hexadecimal value of the colour #
-
+MET_TIMER		EQU 10H
 
 ;*************************************************************************************************************************
 
@@ -138,39 +139,56 @@ MISSILE_STEPS:
 	WORD 0H
 
 METEOR_PLACE:
-	BYTE METEOR_LINE, METEOR_COLUMN	; First byte of the word stores the line and the second one the column
+	BYTE METEOR_LINE, METEOR_COLUMN		; First byte of the word stores the line and the second one the column
 	
-CHANGE_COL:				; Stores column variation of the position of the object
+CHANGE_COL:					; Stores column variation of the position of the object
 	WORD 0H
 	
-CHANGE_LINE:				; Stores line variation of the position of the object
+CHANGE_LINE:					; Stores line variation of the position of the object
 	WORD 0H
 	
 
-PEN_MODE:				; Flag used to either draw or erase pixels by draw_object and erase_object
+PEN_MODE:					; Flag used to either draw or erase pixels by draw_object and erase_object
 	WORD 0H
 	
-DELAY_COUNTER:				; Counter until MOV_TIMER is reached and ship moves
+DELAY_COUNTER:					; Counter until MOV_TIMER is reached and ship moves
 	WORD 0H
 
 DISPLAY_VALUE:
-	WORD UPPER_BOUND		; Energy display initial value
+	WORD UPPER_BOUND			; Energy display initial value
 
-DISPLAY_VARIATION:
+DISPLAY_VARIATION:				; Energy display variation value
 	WORD 0H
 	
-DELAY_FLAG:				; Ship movement delay flag
-
+DELAY_FLAG:					; Ship movement delay flag
 	WORD 0H
 
-METEOR_INTERRUPTION_FLAG:
+METEOR_INTERRUPTION_FLAG:			; Flag to determine the movement of the meteor 
 	WORD 0H
 
-MISSILE_INTERRUPTION_FLAG:
+MISSILE_INTERRUPTION_FLAG:			; Flag to determine the movement of the missile
 	WORD 0H
 	
-ENERGY_INTERRUPTION_FLAG:
+ENERGY_INTERRUPTION_FLAG:			; Flag to determine the movement of the energy
 	WORD 0H
+
+MET_SPAWN_TIMER:				; Value to determine the creation of a meteor 
+	WORD 10H
+
+METEOR_NUMBER:					; Number of meteors in the screen
+	WORD 0H
+	
+BAD_METEOR_SHAPES:				; Table of  all BAD type meteor layouts
+	WORD DEF_METEOR
+	
+GOOD_METEOR_SHAPES:				; Table of  all BAD type meteor layouts
+	WORD DEF_METEOR				
+
+METEOR_TABLE:					; Table of all the meteor positions , type and steps it took
+	WORD 0H, 0H, 0H, 0H
+	WORD 0H, 0H, 0H, 0H
+	WORD 0H, 0H, 0H, 0H
+	WORD 0H, 0H, 0H, 0H
 
 ;*************************************************************************************************************************
 
@@ -203,18 +221,12 @@ BUILD_SHIP:
 	CALL erase_object		; Deletes ship from screen
 	CALL draw_object		; Draws ship
 	
-BUILD_METEOR:
-	MOV R8, METEOR_PLACE		; Stores line in the first byte of R8 and column on the second one
-	MOV R9, DEF_METEOR		; Stores meteor layout
-	CALL placement			; Stores the meteor position reference, R1 stores line and R2 stores column
-	CALL erase_object		; Deletes meteor from screen
-	CALL draw_object		; Draws meteor
 
 MAIN_CYCLE:
 	CALL keypad			; Checks if there is a pressed button
 	CALL display_decrease		; Checks if the pressed button changes the display
 	CALL mov_missile		; Checks if missile is to be shot , moved , or destroyed
-	CALL mov_met			; Checks if the pressed button changes the meteor position
+	CALL create_met			; Checks if the pressed button changes the meteor position
 	CALL mov_ship			; Checks if the pressed button changes the ship position
 	JMP MAIN_CYCLE
 		
@@ -285,26 +297,27 @@ shoot_missile:
 	PUSH R2
 	PUSH R8
 	PUSH R9
-	MOV R0 , [BUTTON]	; Stores pressed button 
-	MOV R1 , SHOOT		; Stores SHOOT button
-	CMP R0, R1		; Checks if the pressed button is SHOOT
-	JNZ SHOOT_MISSILE_END	; Jumps to end of routine if the last instruction is false
+	MOV R0 , [BUTTON]		; Stores pressed button 
+	MOV R1 , SHOOT			; Stores SHOOT button
+	CMP R0, R1			; Checks if the pressed button is SHOOT
+	JNZ SHOOT_MISSILE_END		; Jumps to end of routine if the last instruction is false
 	
 GET_MISSILE_POSITION:
-	MOV R0, [MISSILE_PLACE]	; Stores missile placement
-	CMP R0, 0		; Verifies if there it is 0 ( there is no missile flying)
-	JNZ SHOOT_MISSILE_END	; If no missile is in the air , end routine
+	MOV R0, [MISSILE_PLACE]		; Stores missile placement
+	CMP R0, 0			; Verifies if there it is 0 ( there is no missile flying)
+	JNZ SHOOT_MISSILE_END		; If no missile is in the air , end routine
 	
 DRAW_MISSILE:
-	MOV R8, SHIP_PLACE	; Stores Ship position
-	CALL placement		; Stores ship reference position (Line in R1 and Column in R2)
-	ADD R1, -1		; Adds-1 to obtain line above the ship
-	ADD R2, 2		; Adds 2 to obtain middle reference collumn of the ship
-	MOV R9 , DEF_MISSILE	; Stores missile layout
-	Call draw_object	; draws object
+	MOV R8, SHIP_PLACE		; Stores Ship position
+	CALL placement			; Stores ship reference position (Line in R1 and Column in R2)
+	ADD R1, -1			; Adds-1 to obtain line above the ship
+	ADD R2, 2			; Adds 2 to obtain middle reference collumn of the ship
+	MOV R9 , DEF_MISSILE		; Stores missile layout
+	Call draw_object		; Draws object
+	MOV [PLAY_SOUND_VIDEO], R0	; Play shooting sound
 	SHL R1, 8
-	OR R1 , R2		; Uses or function to store line and collumn together in R1
-	MOV [MISSILE_PLACE] , R1; Stores in memory the missile reference position
+	OR R1 , R2			; Uses or function to store line and collumn together in R1
+	MOV [MISSILE_PLACE] , R1	; Stores in memory the missile reference position
 		
 SHOOT_MISSILE_END:
 	POP R9
@@ -341,16 +354,8 @@ MOVE_DRAW_MISSILE:
 	CALL mov_vertical
 	MOV R0 , 0
 	MOV [MISSILE_INTERRUPTION_FLAG], R0
+	CALL check_missile_limits
 	
-	
-MISSILE_LIMITS:
-	CALL placement
-	MOV R0, MISSILE_LINE_MAX
-	CMP R1 , R0
-	JNZ MOV_MISSILE_END
-	CALL erase_object
-	MOV R0, 0
-	MOV [R8], R0
 
 
 MOV_MISSILE_END:
@@ -361,8 +366,32 @@ MOV_MISSILE_END:
 	POP R0
 	RET
 	
+;********************************************************************************************************
+;MISSILE LIMITS
+;********************************************************************************************************		
 	
+check_missile_limits:
+	PUSH R0
+	PUSH R1
+	PUSH R2
+	CALL placement
+
+MISSILE_TOP_LIMIT:
+	MOV R0, MISSILE_LINE_MAX
+	CMP R1 , R0
+	JNZ CHECK_MISSILE_LIMITS_END
+	CALL erase_object
+	MOV R0, 0
+	MOV [R8], R0
 	
+
+
+CHECK_MISSILE_LIMITS_END:
+	POP R2
+	POP R1
+	POP R0
+	RET
+
 	
 	
 	
@@ -381,13 +410,158 @@ mov_vertical:
 	MOVB [R8], R1			; Changes line position of the meteor
 	CALL draw_object		; Draws object in new position
 	MOV R1, 0
-	MOV [PLAY_SOUND_VIDEO], R1
 	
 mov_vertical_end:			; Restores stack values in the registers
 	POP R8
 	POP R7
 	POP R1
 	RET
+
+
+
+;********************************************************************************************************
+;*mov_met
+;
+; Moves the meteor position if the pressed button is MET_DOWN
+;********************************************************************************************************
+
+
+create_met:
+	PUSH R0
+	PUSH R2
+	PUSH R3 
+	
+CHECK_MET_TIMER:
+	MOV R3 , [MET_SPAWN_TIMER]
+	MOV R2, MET_TIMER
+	CMP R3, R2
+	JNZ CREATE_MET_END
+
+	MOV R3 , 0
+	MOV R0, [METEOR_NUMBER]
+	CMP R0, 4
+	JZ CREATE_MET_END
+	CALL store_build_meteor
+	MOV R2, 0
+	MOV [SELECT_SCREEN], R2
+	ADD R0, 1
+	MOV [METEOR_NUMBER], R0 
+	 
+	
+	
+CREATE_MET_END:
+	ADD R3, 1
+	MOV [MET_SPAWN_TIMER], R3
+	POP R3
+	POP R2
+	POP R0
+	RET
+	
+;********************************************************************************************************
+;*store_meteor
+;
+;********************************************************************************************************
+
+
+store_build_meteor:
+	PUSH R1
+	PUSH R2
+	PUSH R9
+	PUSH R8
+	MOV R8 , METEOR_TABLE
+	MOV R1 , 1
+	MOV [SELECT_SCREEN], R1
+
+FIND_SPACE:
+	CALL placement			; Stores meteor reference position (Line in R1 and Column in R2) 
+	CMP R2 , 0			; Checks if there is no meteor in this position ( meteor will never be in collumn 0)
+	JZ BUILD_METEOR			; If there is a free space it will build a meteor there
+	CALL select_meteor		; Selects next meteor from the meteor_table and next pixel screen 
+	JMP FIND_SPACE			; Repeats cycle until it finds a free meteor space
+	
+BUILD_METEOR:
+	MOV R1, METEOR_LINE		; Stores in R1 initial meteor position line
+	MOV R2, METEOR_COLUMN		; Stores in R2 initial meteor position column
+	MOV [R8], R1			; Stores in memory ( meteor_table ) the reference position line
+	ADD R8, 2			; Advances one word in the meteor_table to obtain position collumn
+	MOV [R8], R2			; Stores in meteor_table the reference position column
+	ADD R8 , 2 			; Advances one word in the meteor_table to obtain meteor_layout 
+	MOV R9, GOOD_METEOR_SHAPES	; Stores in R9 the meteor_layout
+	MOV [R8], R9			; Stores in memory the meteor_layout address
+	MOV R9 , [R9]
+	CALL draw_object		; Draws meteor
+	POP R9
+	POP R8
+	POP R2
+	POP R1
+	RET	
+
+	
+
+;********************************************************************************************************
+;*mov_meteor
+;
+;********************************************************************************************************
+
+;mov_met:
+;	PUSH R0
+;	PUSH R6
+;	PUSH R7
+;	PUSH R8 
+;	PUSH R9
+;	MOV R9, [R9]			; Stores meteor layout
+;	
+;MOVE_MET:
+;	CALL placement			; Stores meteor reference position (Line in R1 and Column in R2)
+;	CALL erase_object		; Deletes object from current position
+;	ADD R1, 1			; Adds line variation to the new reference position of meteor
+;	MOV [R8], R1			; Changes line position of the meteor
+;	CALL draw_object		; Draws object in new position
+;	ADD R8 , 4
+;	MOV R6, R8
+;	
+;CHECK_SIZE:
+;	ADD R8 , 2			;
+;	MOV R0, MAX_STEPS		;
+;	CMP R0, [R8]			;
+;	JZ MET_END			;
+;	MOV R3, [R8]
+;	MOV R1 , R3
+;	DIV R1, 3		
+;	JLE MET_END
+;	MOV R1 , [R6]
+;	ADD R1 , 2
+;	MOV [R6] , R1
+;	ADD R3, 1
+;	MOV [R8] , R3
+	
+	
+;MET_END:				; Restores stack values in the registers
+;	POP R9
+;	POP R8
+;	POP R7
+;	POP R0
+;	RET
+	
+
+
+;********************************************************************************************************
+;*select_meteor
+;
+;********************************************************************************************************
+
+select_meteor:
+	PUSH R0
+	MOV R0, 8
+	ADD  R8	, R0			; Adds 8 to R8 ( METEOR_TABLE) , to obtain next meteor
+	MOV R0, [SELECT_SCREEN]		; Stores number of selected screen in R0
+	ADD R0, 1		
+	MOV [SELECT_SCREEN], R0		; Selects next screen
+	POP R0	
+	RET
+
+
+
 	
 ;********************************************************************************************************
 ;* mov_met
@@ -616,7 +790,9 @@ placement:
 ;
 ; Writes an object on the screen (either to draw or erase it)
 ;
-; INPUT: 	R9 - Object definition (heigth, width, layout)
+; INPUT:	R1 - Object reference line
+;		R2 - Object reference column
+;		R9 - Object definition (heigth, width, layout)
 ;*******************************************************************************************
 
 write_object:

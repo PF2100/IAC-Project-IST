@@ -8,7 +8,7 @@
 
 
 ; PEDRO - check_missile_limits ( falta colisões missil->meteoro) , mov_meteor (falta selecionar o tipo de tamanho e colisões 
-;	 meteoro->rover e limites do meteoro quando a coluna é 0)
+;	 meteoro->rover ) , MENUS DE PAUSA , game over quando  existirem colisoes ou display value a
 
 
 
@@ -95,7 +95,9 @@ METEOR_COLUMN		EQU 16		; Meteor initial column
 METEOR_HEIGHT		EQU 6
 METEOR_WIDTH		EQU 6
 METEOR_COLOUR		EQU 0 		; Hexadecimal value of the colour #
-MET_TIMER		EQU 10H
+MET_TIMER		EQU 0800H
+MAX_STEPS		EQU 13		; 
+MAX_METEOR_LINE		EQU 1FH
 
 ;*************************************************************************************************************************
 
@@ -110,8 +112,24 @@ DEF_SHIP:				; Ship layout (colour of each pixel, height, width)
 	WORD 0, 0, BLUE, 0, 0, 0, RED, WHITE, RED, 0, DARKRED, WHITE, WHITE, WHITE, DARKRED, WHITE, 0, WHITE, 0, WHITE
 	
 ;**********METEOR DIMENSIONS**********************************************************************************************
+
+DEF_METEOR_FAR:
+	WORD 1, 1
+	WORD RED
+
+DEF_METEOR_CLOSER:
+	WORD 2, 2
+	WORD RED, RED, RED, RED
+
+DEF_METEOR_SMALL:
+	WORD 3, 3
+	WORD RED, RED, RED, RED, RED, RED, RED, RED, RED
+
+DEF_METEOR_MEDIUM:
+	WORD 4, 4
+	WORD RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED
 	
-DEF_METEOR:
+DEF_METEOR_MAX:
 	WORD METEOR_HEIGHT, METEOR_WIDTH
 	WORD 0, 0, RED, RED, 0, 0, 0, RED, RED, RED, RED, 0, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED,
 		0, RED, RED, RED, RED, 0, 0, 0, RED, RED, 0, 0
@@ -181,29 +199,33 @@ ENERGY_INTERRUPTION_FLAG:			; Flag to determine the movement of the energy
 	WORD 0H
 
 MET_SPAWN_TIMER:				; Value to determine the creation of a meteor 
-	WORD 10H
+	WORD 0800H
 
 METEOR_NUMBER:					; Number of meteors in the screen
 	WORD 0H
 	
 BAD_METEOR_SHAPES:				; Table of  all BAD type meteor layouts
-	WORD DEF_METEOR
+	WORD DEF_METEOR_FAR, DEF_METEOR_CLOSER 
+	WORD DEF_METEOR_SMALL, DEF_METEOR_MEDIUM
+	WORD DEF_METEOR_MAX
 	
-GOOD_METEOR_SHAPES:				; Table of  all BAD type meteor layouts
-	WORD DEF_METEOR				
+GOOD_METEOR_SHAPES:				; Table of  all GOOD type meteor layouts
+	WORD DEF_METEOR_FAR, DEF_METEOR_CLOSER 
+	WORD DEF_METEOR_SMALL, DEF_METEOR_MEDIUM
+	WORD DEF_METEOR_MAX			
 
 METEOR_TABLE:					; Table of all the meteor positions , type and steps it took
 	BYTE 0H, 0H 
-	WORD 0H, 0H
+	WORD GOOD_METEOR_SHAPES, 1H
 	
 	BYTE 0H, 0H 
-	WORD 0H, 0H
+	WORD GOOD_METEOR_SHAPES, 1H
 	
 	BYTE 0H, 0H 
-	WORD 0H, 0H
+	WORD GOOD_METEOR_SHAPES, 1H
 	
 	BYTE 0H, 0H 
-	WORD 0H, 0H
+	WORD GOOD_METEOR_SHAPES, 1H
 
 ;*************************************************************************************************************************
 
@@ -424,6 +446,7 @@ CHECK_MISSILE_LIMITS_END:		; Ends routine
 ;
 ; Moves a object vertically based on CHANGE_LINE value
 ; INPUT: R8 - Object Reference position 
+;	 R9 - Object Layout
 ;********************************************************************************************************		
 
 mov_object_vertically:
@@ -461,11 +484,11 @@ CHECK_MET_TIMER:
 	MOV R3 , [MET_SPAWN_TIMER]	; Stores spawn_timer value in R3
 	MOV R2, MET_TIMER
 	CMP R3, R2			; Checks if spawn_timer has reached its maximum value
-	JNZ CREATE_MET_END		; Jumps to end of routine if last instruction is false
+	JLT CREATE_MET_END		; Jumps to end of routine if last instruction is false
 
 	MOV R3 , 0			; Stores value of MET_SPAWN_TIMER
 	MOV R0, [METEOR_NUMBER]		
-	CMP R0, 1			; Checks if the maximum number of meteors was achieved
+	CMP R0, 4			; Checks if the maximum number of meteors was achieved
 	JZ CREATE_MET_END
 	CALL store_build_meteor		; Stores and creates a meteor
 	MOV R2, 0			; 
@@ -493,6 +516,7 @@ CREATE_MET_END:				; Ends routine
 store_build_meteor:
 	PUSH R1
 	PUSH R2
+	PUSH R3
 	PUSH R9
 	PUSH R8
 	MOV R8 , METEOR_TABLE
@@ -512,14 +536,17 @@ BUILD_METEOR:
 	MOV R3, R1			;
 	SHL R3 , 8			;
 	OR R3 , R2			;
-	MOV [R8], R3			;
+	MOV [R8], R3			; Storesin memory the meteor reference position
 	ADD R8 , 2 			; Advances one word in the meteor_table to obtain meteor_layout 
 	MOV R9, GOOD_METEOR_SHAPES	; Stores in R9 the meteor_layout
-	MOV [R8], R9			; Stores in memory the meteor_layout address
-	MOV R9 , [R9]
+	MOV [R8], R9			; Stores in memory the meteor__evolution address
+	MOV R9 , [R9]			; Obtains the meteor layout
 	CALL draw_object		; Draws meteor
+	
+STORE_BUILD_METEOR_END:
 	POP R9
 	POP R8
+	POP R3
 	POP R2
 	POP R1
 	RET	
@@ -534,10 +561,12 @@ BUILD_METEOR:
 
 move_meteors:
 	PUSH R1
+	PUSH R3
 	PUSH R6
 	PUSH R7
 	PUSH R8 
 	PUSH R9
+	MOV R3, 0
 	MOV R8, METEOR_TABLE
 	MOV R6, [METEOR_NUMBER]
 	
@@ -545,6 +574,7 @@ ALLOW_METEOR_MOVEMENT:
 	MOV R1 , [METEOR_INTERRUPTION_FLAG]
 	CMP R1, 1				; Checks if there is METEOR_INTERRUPTION_FLAG value is 1
 	JNZ MOVE_MET_END			; Ends routine if last instruction is false
+	MOV [METEOR_INTERRUPTION_FLAG], R3	; Resets METEOR_INTERRUPTION_FLAG to 0
 	CMP R6, 0				; Checks if the number of meteors is 0
 	JZ MOVE_MET_END				; Ends routine if last instruction is True
 	MOV R1, 1				
@@ -564,13 +594,12 @@ GET_NEXT_METEOR:
 	JMP GET_METEOR				; Repeats GET_METEOR cycle until all meteors are checked
 	
 MOVE_MET_END:
-	MOV R1 , 0
-	MOV [METEOR_INTERRUPTION_FLAG], R1	; Resets METEOR_INTERRUPTION_FLAG value to 0 
-	MOV [SELECT_SCREEN], R1			; Selects original screen 
+	MOV [SELECT_SCREEN], R3		; Selects original screen 
 	POP R9
 	POP R8
 	POP R7
 	POP R6
+	POP R3
 	POP R1
 	RET
 	
@@ -590,10 +619,12 @@ move_meteor:
 	MOV R7 , 1
 	MOV [CHANGE_LINE], R7		; Changes line variation value to 1
 
-SELECT_TYPE:
-	MOV R7, [R8+2H]			; stores the meteor size evolution table
-	MOV R9, [R7]			; Stores the meteor layout in R9
-	CALL mov_object_vertically	; Moves the meteor 1 line down 
+CHECK_LAYOUT:
+	CALL select_layout		;
+	MOV R7, [R8+2H]
+	MOV R9, [R7]
+	CALL mov_object_vertically	; Moves the meteor 1 line down
+	CALL check_meteor_limits	; 
 
 move_meteor_end:
 	POP R9
@@ -602,7 +633,108 @@ move_meteor_end:
 	POP R1
 	POP R0
 	RET
+
+
+;********************************************************************************************************
+;* check_meteor_limits
+;
+;********************************************************************************************************
+
+check_meteor_limits:
+	PUSH R0
+	PUSH R1
+	PUSH R2
+	PUSH R3
+	PUSH R8
+	CALL placement
+	MOV R3, MAX_METEOR_LINE
+	CMP R1, R3
+	JNZ CHECK_METEOR_LIMITS_END
+	Call eliminate_meteor
+
+CHECK_METEOR_LIMITS_END:
+	POP R8
+	POP R3
+	POP R2
+	POP R1
+	POP R0
+	RET
 	
+;********************************************************************************************************
+;*eliminate_meteor
+;
+;********************************************************************************************************
+	
+eliminate_meteor:
+	PUSH R0
+	PUSH R1
+	PUSH R2
+	PUSH R8
+	
+	MOV R0, 0
+	CALL erase_object
+	MOV [R8], R0
+	ADD R8 , 2H
+	MOV [R8], R0
+	ADD R8, 2H
+	MOV R0, 1
+	MOV [R8], R0
+	MOV R2 , [METEOR_NUMBER]
+	SUB R2, 1
+	MOV [METEOR_NUMBER], R2
+	
+	POP R8
+	POP R2
+	POP R1
+	POP R0
+	RET
+		
+	
+	
+;********************************************************************************************************
+;* check_layout
+;
+;********************************************************************************************************
+
+select_layout:
+	PUSH R0
+	PUSH R1
+	PUSH R2
+	PUSH R6
+	PUSH R8
+	MOV R6 ,R8
+	ADD R8 , 4H
+	ADD R6 , 2H
+	
+CHECK_STEPS:
+	MOV R0, [R8]
+	MOV R1, MAX_STEPS
+	CMP R0, R1
+	JGE SELECT_LAYOUT_END
+	
+	MOV R2, R0
+	MOV R1, 3
+	MOD R2, R1
+	JNZ ADD_STEPS
+	
+	MOV R1 , 2H
+	MOV R9 , [R6]
+	ADD R9 , R1
+	MOV [R6], R9
+	
+ADD_STEPS:
+	ADD R0, 1
+	MOV [R8], R0
+	
+	
+SELECT_LAYOUT_END:
+	POP R8
+	POP R6
+	POP R2
+	POP R1
+	POP R0
+	RET
+
 
 
 ;********************************************************************************************************

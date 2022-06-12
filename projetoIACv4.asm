@@ -20,6 +20,7 @@ BUTTON		EQU 0900H   		; Stores the pressed button
 LAST_BUTTON 	EQU 0902H		; Stores previous pressed button (prior to the current)
 NO_BUTTON	EQU 0FFFFH		; Value of no pressed button
 
+
 ;****DISPLAY****************************************************************************
 
 DISPLAY			EQU 0A000H		; Display adress
@@ -28,6 +29,7 @@ LOWER_BOUND		EQU 0000H		; Display lower bound (energy)
 DISPLAY_TIMER 		EQU 0100H		; Display delay between pressing button and changing energy value
 HEXTODEC_CONST		EQU 000AH		; Display hexadecimal to decimal constant
 DISPLAY_DECREASE	EQU -5			; Display decrease value 
+
 
 ;****KEYPAD COMMANDS*******************************************************************
 
@@ -104,8 +106,8 @@ STACK 100H
 
 STACK_INIT:
 
-;**********OBJECTS LAYOUT*************************************************************************************************
 
+;**********OBJECTS LAYOUT*************************************************************************************************
 
 DEF_SHIP:				; Ship layout (colour of each pixel, height, width)
 	WORD HEIGHT, WIDTH
@@ -147,7 +149,6 @@ interruption_table:
 		
 		
 ;**************************************************************************************************************************
-
 	
 SHIP_PLACE:					; Reference to the position of ship 
 	BYTE LINE, COLUMN			; First byte of the word stores the line and the second one the column
@@ -302,7 +303,6 @@ MOVE:
 	ADD R8, 1			; Adds 1 to SHIP_PLACE to obtain the column address
 	MOVB [R8], R2			; Changes column position of the ship
 	CALL draw_object		; Draws object in new position
-	
 
 SHIP_END:				; Restores stack values in the registers
 	POP R10

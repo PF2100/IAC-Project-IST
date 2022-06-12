@@ -96,13 +96,27 @@ METEOR_COLUMN		EQU 16		; Meteor initial column
 METEOR_HEIGHT		EQU 6
 METEOR_WIDTH		EQU 6
 METEOR_COLOUR		EQU 0 		; Hexadecimal value of the colour #
-MET_TIMER		EQU 0800H
+MET_TIMER		EQU 0100H
 MAX_STEPS		EQU 13		; 
 MAX_METEOR_LINE		EQU 1FH
 NEXT_METEOR_VALUE	EQU 06H
 OBTAIN_STEPS		EQU 04H
 
+HEART1 			EQU 0F801H
+HEART2 			EQU 0FC02H
+HEART3			EQU 0F212H
+HEART4 			EQU 0FF56H
+HEART5 			EQU 0FFFFH
 
+
+;*************************************************************************************************************************
+
+
+;***RANDOM*************************************************************************************************************
+
+RANDOM_MAX		EQU 7
+MAX_METEOR_COLUMN	EQU 56
+COL_DETERM_VAL		EQU 8
 
 ;*************************************************************************************************************************
 
@@ -134,15 +148,20 @@ DEF_METEOR_MEDIUM:
 	WORD 4, 4
 	WORD RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED
 	
+
 DEF_METEOR_MAX:
-	WORD METEOR_HEIGHT, METEOR_WIDTH
-	WORD 0, 0, RED, RED, 0, 0, 0, RED, RED, RED, RED, 0, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED,
-		0, RED, RED, RED, RED, 0, 0, 0, RED, RED, 0, 0
-		
+	WORD 4, 4
+	WORD HEART4, HEART4, HEART4, HEART4,HEART4, HEART4, HEART4, HEART4, HEART4, HEART4, HEART4, HEART4, HEART4, HEART4, HEART4,
+	HEART4
+	
+DEF_METEOR_GOOD:
+	WORD 4, 4
+	WORD BLUE, BLUE, BLUE, BLUE,BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE,
+	BLUE	
+
 DEF_MISSILE:
 	WORD MISSILE_HEIGHT, MISSILE_WIDTH
 	WORD RED
-
 
 ;*************************************************************************************************************************
 
@@ -197,7 +216,7 @@ ENERGY_INTERRUPTION_FLAG:			; Flag to determine the movement of the energy
 	WORD 0H
 
 MET_SPAWN_TIMER:				; Value to determine the creation of a meteor 
-	WORD 0800H
+	WORD MET_TIMER
 
 METEOR_NUMBER:					; Number of meteors in the screen
 	WORD 0H
@@ -210,7 +229,7 @@ BAD_METEOR_SHAPES:				; Table of  all BAD type meteor layouts
 GOOD_METEOR_SHAPES:				; Table of  all GOOD type meteor layouts
 	WORD DEF_METEOR_FAR, DEF_METEOR_CLOSER 
 	WORD DEF_METEOR_SMALL, DEF_METEOR_MEDIUM
-	WORD DEF_METEOR_MAX			
+	WORD DEF_METEOR_GOOD			
 
 METEOR_TABLE:					; Table of all the meteor positions , type and steps it took
 	BYTE 0H, 0H 
@@ -225,6 +244,7 @@ METEOR_TABLE:					; Table of all the meteor positions , type and steps it took
 	BYTE 0H, 0H 
 	WORD 0H, 1H
 	
+
 EXISTS_COLLISION:
 	WORD 0H
 	
@@ -527,14 +547,15 @@ FIND_SPACE:
 	JMP FIND_SPACE			; Repeats cycle until it finds a free meteor space
 	
 BUILD_METEOR:
+
 	MOV R1, METEOR_LINE		; Stores in R1 initial meteor position line
-	MOV R2, METEOR_COLUMN		; Stores in R2 initial meteor position column
+	CALL random_met_place		;
 	MOV R3, R1			;
 	SHL R3, 8			;
 	OR R3, R2			;
-	MOV [R8], R3			; Stores in memory the meteor reference position
+	MOV [R8], R3			; Storesin memory the meteor reference position
 	ADD R8, 2 			; Advances one word in the meteor_table to obtain meteor_layout 
-	MOV R9, GOOD_METEOR_SHAPES	; Stores in R9 the meteor_layout
+	CALL random_met_type
 	MOV [R8], R9			; Stores in memory the meteor__evolution address
 	MOV R9, [R9]			; Obtains the meteor layout
 	CALL draw_object		; Draws meteor
@@ -547,6 +568,75 @@ STORE_BUILD_METEOR_END:
 	POP R1
 	RET	
 
+;********************************************************************************************************
+;* random_met_place
+;
+;
+;********************************************************************************************************
+
+random_met_place:
+	PUSH R0
+	PUSH R1
+	PUSH R3
+	PUSH R4
+	MOV R3, KEY_COL
+	MOV R1, COL_DETERM_VAL
+	
+GENERATE_RANDOM_COL:
+	MOVB R0, [R3]
+	SHR R0, 5
+	MOV R4, KEY_MASK
+	AND R0, R4
+	MOV R2, R0
+	CMP R0, RANDOM_MAX
+	JNZ LAST_POSSIBLE_COL
+	MOV R2, MAX_METEOR_COLUMN
+	JMP RANDOM_PLACE_END
+
+LAST_POSSIBLE_COL:
+	SHL R2, 3
+	ADD R2, R1
+
+
+RANDOM_PLACE_END:
+	POP R4
+	POP R3
+	POP R1
+	POP R0
+	RET
+
+;********************************************************************************************************
+;* random_met_type
+;
+;
+;********************************************************************************************************
+
+random_met_type:
+	PUSH R0
+	PUSH R1
+	PUSH R3
+	MOV R3, KEY_COL
+
+GENERATE_RANDOM_NUM:
+	MOVB R0, [R3]
+	SHR R0, 5
+	MOV R4, KEY_MASK
+	AND R0, R4
+
+CHOOSE_MET_TYPE:
+	CMP R0, 1
+	JLE GOOD_MET
+	MOV R9, BAD_METEOR_SHAPES
+	JMP RANDOM_TYPE_END
+
+GOOD_MET:
+	MOV R9, GOOD_METEOR_SHAPES
+
+RANDOM_TYPE_END:
+	POP R3
+	POP R1
+	POP R0
+	RET
 	
 ;********************************************************************************************************
 ;*move_meteors

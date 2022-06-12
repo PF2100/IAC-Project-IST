@@ -13,7 +13,11 @@
 
 ;****KEYPAD****************************************************************************
 
-INJECTED_LINE 	EQU 8			; Initial keypad line (fourth)
+NEXT_WORD_VALUE		EQU 02H
+LOWER_BYTE_MASK		EQU 00FFH
+BYTE_VALUE		EQU 8
+
+INJECTED_LINE 	EQU BYTE_VALUE		; Initial keypad line (fourth)
 KEY_LIN 	EQU 0C000H		; Keyboard Rows
 KEY_COL 	EQU 0E000H		; Keyboard Columns
 KEY_MASK	EQU 0FH			; Isolates the lower nibble from the output of the keypad
@@ -96,15 +100,8 @@ MET_TIMER		EQU 0800H
 MAX_STEPS		EQU 13		; 
 MAX_METEOR_LINE		EQU 1FH
 NEXT_METEOR_VALUE	EQU 06H
-NEXT_WORD_VALUE		EQU 02H
 OBTAIN_STEPS		EQU 04H
-HEART1 			EQU F801H
-HEART2 			EQU FC02H
-HEART3			EQU F212H
-HEART4 			EQU FF56H
-HEART5 			EQU FFFFH
-HEART_HEIGHT		EQU 6
-HEART_WIDTH		EQU 7
+
 
 
 ;*************************************************************************************************************************
@@ -141,11 +138,6 @@ DEF_METEOR_MAX:
 	WORD METEOR_HEIGHT, METEOR_WIDTH
 	WORD 0, 0, RED, RED, 0, 0, 0, RED, RED, RED, RED, 0, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED,
 		0, RED, RED, RED, RED, 0, 0, 0, RED, RED, 0, 0
-DEF_HEART_MAX:
-	WORD HEART_HEIGHT, HEART_WIDTH
-	WORD 0, HEART4, HEART4, 0, HEART3, HEART3, 0, HEART4, HEART5, HEART3, HEART3, HEART3, HEART2, HEART1, HEART4,
-		HEART3, HEART3, HEART3, HEART2, HEART1, HEART1, 0, HEART3, HEART3, HEART2, HEART1, HEART1, 0, 0, 0,
-		HEART3, HEART1, HEART1, 0, 0, 0, 0, 0, HEART1, 0, 0, 0
 		
 DEF_MISSILE:
 	WORD MISSILE_HEIGHT, MISSILE_WIDTH
@@ -166,7 +158,7 @@ SHIP_PLACE:					; Reference to the position of ship
 	BYTE LINE, COLUMN			; First byte of the word stores the line and the second one the column
 	
 MISSILE_PLACE:					; Reference to the position of the missile 
-	WORD MISSILE_LINE, MISSILE_COLUMN	; First byte of the word stores the line and the second one the column
+	BYTE MISSILE_LINE, MISSILE_COLUMN	; First byte of the word stores the line and the second one the column
 
 MISSILE_STEPS:
 	WORD 0H
@@ -234,6 +226,12 @@ METEOR_TABLE:					; Table of all the meteor positions , type and steps it took
 	WORD 0H, 1H
 	
 EXISTS_COLLISION:
+	WORD 0H
+	
+LEFT_DOWN_POSITION:
+	WORD 0H
+	
+RIGHT_UP_POSITION:
 	WORD 0H
 	
 
@@ -359,7 +357,6 @@ MOVE_DRAW_MISSILE:
 	CALL mov_object_vertically		; Moves the missile vertically 1 line up
 	MOV R0, 0			
 	MOV [MISSILE_INTERRUPTION_FLAG], R0	; Resets the interruption value to 0
-	;CALL check_missile_collisions		; Checks if missile collided with a meteor
 	CALL check_missile_limits		; Checks if the missile is in its limit position
 	
 MOV_MISSILE_END:				; Ends routine
@@ -414,65 +411,9 @@ SHOOT_MISSILE_END:			; Ends Routine
 	RET
 	
 	
-;********************************************************************************************************
-;* check_missile_collisions
-;
-; Checks if missile has reached either the MISSILE_LINE_MAX value or if there is a collision
-; INPUT: R8 - Missile reference position 
-;********************************************************************************************************	
-	
-;check_missile_collisions:
-;	PUSH R1 
-;	PUSH R2
-;	PUSH R3
-;	PUSH R8
-;	MOV R8, [MISSILE_PLACE]
-;	CALL placement
-;	MOV R3, R1
-;	SHL R3, 8
-;	OR R3, R2
-;	CALL check_collisions
-;
-;Detect_collision:
-;	MOV R1, [DETECT_COLLISION]
-;	CMP R1, 1
-;	JNZ CHECK_MISSILE_COLLISIONS_END
-;	MOV R8, [R8 + OBTAIN
-	 
-	
-	
-;********************************************************************************************************
-;*check_collisions
-;
-; 
-;********************************************************************************************************	
-	
-;check_collisions:
-;	PUSH R0
-;	PUSH R1
-;	PUSH R2
-;	PUSH R3
-;	PUSH R6
-;	PUSH R8
-;	MOV R6, [METEOR_NUMBER]
-;	MOV R1, 1				
-;	MOV [SELECT_SCREEN], R1			; Selects first meteor screen
-;	MOV R8, [METEOR_TABLE]
-	
-;OBTAIN_METEOR:
-;	CALL placement				; Stores meteor reference position (Line in R1 and Column in R2) 
-;	CMP R2, 0				; Checks if there is no meteor in this position ( meteor will never be in collumn 0)
-;	JZ GET_NEXT_METEOR			; Jumps if there is no meteor in this position
-;	CALL check_collision			;
-;	MOV		
-;	SUB R6, 1				; 
-;	JZ MOVE_MET_END				; 
-	
-;OBTAIN_NEXT_METEOR:
-;	CALL select_meteor			; Selects next meteor from the METEOR_TABLE
-;	JMP GET_METEOR	
 
 
+	
 ;********************************************************************************************************
 ;*check_missile_limits
 ;
@@ -591,7 +532,7 @@ BUILD_METEOR:
 	MOV R3, R1			;
 	SHL R3, 8			;
 	OR R3, R2			;
-	MOV [R8], R3			; Storesin memory the meteor reference position
+	MOV [R8], R3			; Stores in memory the meteor reference position
 	ADD R8, 2 			; Advances one word in the meteor_table to obtain meteor_layout 
 	MOV R9, GOOD_METEOR_SHAPES	; Stores in R9 the meteor_layout
 	MOV [R8], R9			; Stores in memory the meteor__evolution address
@@ -638,7 +579,7 @@ GET_METEOR:
 	CALL placement				; Stores meteor reference position (Line in R1 and Column in R2) 
 	CMP R2, 0				; Checks if there is no meteor in this position ( meteor will never be in collumn 0)
 	JZ GET_NEXT_METEOR			; Jumps if there is no meteor in this position
-	CALL move_meteor			; Moves Meteor in this position			
+	CALL move_meteor			; Moves Meteor in this position		
 	SUB R6, 1				; Subtracts 1 from the number of meteors
 	JZ MOVE_MET_END				; Ends routine if there are no more meteors to take care of
 	
@@ -678,6 +619,8 @@ CHECK_LAYOUT:
 	MOV R7, [R8+NEXT_WORD_VALUE]	; Adds WORD value to obtain meteor evolution table address
 	MOV R9, [R7]			; Stores meteor layout in R9
 	CALL mov_object_vertically	; Moves the meteor 1 line down
+	CALL check_missile_collision	;
+	;CALL check_rover_collision	;
 	CALL check_meteor_limits	; Eliminates de meteor if it has reached its maximum line
 
 move_meteor_end:			; Ends routine
@@ -690,13 +633,138 @@ move_meteor_end:			; Ends routine
 
 
 ;********************************************************************************************************
-;* 
-;
+;* check_meteor_collision
 ;********************************************************************************************************
 
+check_missile_collision:
+	PUSH R1
+	PUSH R2
+	PUSH R3
+	PUSH R6
+	PUSH R7
+	PUSH R8
+	PUSH R9
+	
+	
+	MOV R1, [R8]			;
+	CALL obtain_reference_points	; 
+	MOV [LEFT_DOWN_POSITION], R1	; 
+	MOV [RIGHT_UP_POSITION], R2	;
+
+	MOV R7, MISSILE_PLACE		;	
+	MOV R9, DEF_MISSILE		;
+	CALL check_collisions
+
+DETECT_COLLISION:
+	MOV R6, [EXISTS_COLLISION]
+	CMP R6, 1
+	JNZ DETECT_COLLISION_END
+	;CALL explode_meteor
+	;CALL elminate_missile
+	MOV R6 , 0
+	MOV [EXISTS_COLLISION], R6
+	
+	
+DETECT_COLLISION_END:
+	POP R9
+	POP R8
+	POP R7
+	POP R6
+	POP R3
+	POP R2
+	POP R1
+	RET
+
+;********************************************************************************************************
+;* check_meteor_limits
+;
+;*******************************************************************************************************
+
+check_collisions:
+	push R0
+	PUSH R1
+	PUSH R2
+	PUSH R3
+	PUSH R4
+	PUSH R5
+	PUSH R6
+	
+	MOV R1, [R7]
+	CMP R1 , 0
+	JZ CHECK_COLLISIONS_END
+	CALL obtain_reference_points	; R1 LEFT_DOWN, R2 RIGHT_UP OBJECT
+	MOV R3,[LEFT_DOWN_POSITION]	; LEFT_DOWN METEOR REFERECE POSITION
+	MOV R4,[RIGHT_UP_POSITION]	; RIGHT_UP METEOR REFERECE POSITION
+
+CHECK_LINE:
+	MOV R5, R3 			; STORES METEOR LEFT_DOWN		
+	MOV R6, R2			; STORES OBJECT RIGHT_UP
+	
+	SHR R3, BYTE_VALUE		; OBTAINS METEOR LINE
+	SHR R2, BYTE_VALUE		; OBTAINS OBJECT LINE
+	CMP R3, R2
+	JLT CHECK_COLLISIONS_END
+
+CHECK_LEFT_SIDE:
+	MOV R0, LOWER_BYTE_MASK
+	MOV R3 , R5			; STORES METEOR LEFT_DOWN POSITION		
+	MOV R2 , R6			; STORES OBJECT RIGHT_UP POSITION
+	
+	AND R5, R0			; OBTAINS METEOR LEFT COLLUMN
+	AND R6, R0			; OBTAINS OBJECT RIGHT COLLUMN
+	
+	CMP R5 , R6			; Checks if the meteor left collumn is higher than object right collumn
+	JGT CHECK_COLLISIONS_END 	; Jumps if last instruction is true
+
+CHECK_RIGHT_SIDE:
+	AND R4, R0			; OBTAINS METEOR RIGHT COLLUMN
+	AND R1, R0			; OBTAINS OBJECT LEFT COLLUMN
+	
+	CMP R4 , R1			; Checks if the meteor right collumn is lower than object left collumn
+	JLT CHECK_COLLISIONS_END 	; Jumps if last instruction is true
+	MOV R0, 1
+	MOV [EXISTS_COLLISION], R0	; Activates collision_FLAG
 
 
+CHECK_COLLISIONS_END:
+	POP R6
+	POP R5
+	POP R4
+	POP R3
+	POP R2
+	POP R1
+	POP R0
+	RET
 
+;********************************************************************************************************
+;* obtain_reference_positions
+;
+;********************************************************************************************************
+		
+obtain_reference_points:			
+	PUSH R3
+	PUSH R4
+	PUSH R9
+	MOV R2, R1
+	
+	
+OBTAIN_LEFT_DOWN_POINT:			
+	MOV R3, [R9]			; HEIGHT
+	ROR R1, BYTE_VALUE 			
+	ADD R1, R3
+	SUB R1, 1
+	ROR R1, BYTE_VALUE 
+
+OBTAIN_RIGHT_UP_POINT:
+	MOV R4, [R9+NEXT_WORD_VALUE] 	;
+	ADD R2, R4
+	SUB R2, 1
+
+OBTAIN_REFERENCE_POINTS_END:
+	POP R9
+	POP R4
+	POP R3
+	RET
 ;********************************************************************************************************
 ;* check_meteor_limits
 ;

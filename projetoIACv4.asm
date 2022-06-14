@@ -13,7 +13,7 @@
 
 ;****KEYPAD****************************************************************************
 
-NEXT_WORD_VALUE		EQU 02H
+WORD_VALUE		EQU 02H
 LOWER_BYTE_MASK		EQU 00FFH
 BYTE_VALUE		EQU 8
 
@@ -34,6 +34,7 @@ LOWER_BOUND		EQU 0000H		; Display lower bound (energy)
 DISPLAY_TIMER 		EQU 0100H		; Display delay between pressing button and changing energy value
 HEXTODEC_CONST		EQU 000AH		; Display hexadecimal to decimal constant
 DISPLAY_DECREASE	EQU -5			; Display decrease value 
+DISPLAY_INCREASE	EQU 5
 
 
 ;****KEYPAD COMMANDS*******************************************************************
@@ -101,6 +102,10 @@ MAX_STEPS		EQU 13		;
 MAX_METEOR_LINE		EQU 1FH
 NEXT_METEOR_VALUE	EQU 06H
 OBTAIN_STEPS		EQU 04H
+GOOD_COLLISION		EQU 1
+BAD_COLLISION		EQU 0
+
+
 
 YELLOW 			EQU 0FFE0H
 DARKYELLOW		EQU 0FFC1H
@@ -284,6 +289,9 @@ LEFT_DOWN_POSITION:
 	WORD 0H
 	
 RIGHT_UP_POSITION:
+	WORD 0H
+	
+COLLISION_TYPE:
 	WORD 0H
 	
 
@@ -758,6 +766,7 @@ CLEAN_EXPLOSION_END:
 move_meteor:
 	PUSH R0
 	PUSH R1
+	PUSH R6
 	PUSH R7
 	PUSH R8
 	PUSH R9
@@ -766,17 +775,29 @@ move_meteor:
 
 CHECK_LAYOUT:
 	CALL select_layout		; Selects meteor layout based on steps it took	;
-	MOV R7, [R8+NEXT_WORD_VALUE]	; Adds WORD value to obtain meteor evolution table address
+	MOV R7, [R8+WORD_VALUE]		; Adds WORD value to obtain meteor evolution table address
 	MOV R9, [R7]			; Stores meteor layout in R9
 	CALL mov_object_vertically	; Moves the meteor 1 line down
+
+COLLISION_HAPPENED:
+	;CALL check_ship_collision	;
+	;MOV R6, [EXISTS_COLLISION]
+	;CMP R6, 1
+	;JZ MOVE_METEOR_END
+	
 	CALL check_missile_collision	;
-	CALL check_ship_collision	;
+	MOV R6, [EXISTS_COLLISION]
+	CMP R6, 1
+
 	CALL check_meteor_limits	; Eliminates de meteor if it has reached its maximum line
 
-move_meteor_end:			; Ends routine
+MOVE_METEOR_END:			; Ends routine
+	MOV R6, 0
+	MOV [EXISTS_COLLISION], R6
 	POP R9
 	POP R8
 	POP R7
+	POP R6
 	POP R1
 	POP R0
 	RET
@@ -798,22 +819,21 @@ check_ship_collision:
 	PUSH R9
 	
 	
-	MOV R1, [R8]			;
-	CALL obtain_reference_points	; 
-	MOV [LEFT_DOWN_POSITION], R1	; 
-	MOV [RIGHT_UP_POSITION], R2	;
+	MOV R1, [R8]				;
+	CALL obtain_reference_points		; 
+	MOV [LEFT_DOWN_POSITION], R1		; 
+	MOV [RIGHT_UP_POSITION], R2		;
 
-	MOV R7, SHIP_PLACE		;	
-	MOV R9, DEF_SHIP		;
+	MOV R7, SHIP_PLACE			;	
+	MOV R9, DEF_SHIP			;
 	CALL check_collisions
 
 DETECT_SHIP_COLLISION:
 	MOV R6, [EXISTS_COLLISION]
 	CMP R6, 1
 	JNZ CHECK_SHIP_COLLISION_END
-	
-	MOV R6 , 0
-	MOV [EXISTS_COLLISION], R6
+	;CALL treat_ship_meteor_collision
+	;MOV [END_GAME_FLAG],R6
 	
 	
 CHECK_SHIP_COLLISION_END:
@@ -840,24 +860,25 @@ check_missile_collision:
 	PUSH R8
 	PUSH R9
 	
+	MOV R6 , [EXISTS_COLLISION]
+	CMP R6, 1
+	JZ DETECT_MISSILE_COLLISION_END
 	
-	MOV R1, [R8]			;
-	CALL obtain_reference_points	; 
-	MOV [LEFT_DOWN_POSITION], R1	; 
-	MOV [RIGHT_UP_POSITION], R2	;
+	MOV R1, [R8]				;
+	CALL obtain_reference_points		;
+	MOV [LEFT_DOWN_POSITION], R1		;
+	MOV [RIGHT_UP_POSITION], R2		;
 
-	MOV R7, MISSILE_PLACE		;	
-	MOV R9, DEF_MISSILE		;
+	MOV R7, MISSILE_PLACE			;
+	MOV R9, DEF_MISSILE			;
 	CALL check_collisions
 
 DETECT_MISSILE_COLLISION:
 	MOV R6, [EXISTS_COLLISION]
 	CMP R6, 1
 	JNZ DETECT_MISSILE_COLLISION_END
-	CALL eliminate_missile
-	CALL explode_meteor
-	MOV R6 , 0
-	MOV [EXISTS_COLLISION], R6
+	CALL treat_missile_meteor_collisions
+
 	
 	
 DETECT_MISSILE_COLLISION_END:
@@ -869,11 +890,68 @@ DETECT_MISSILE_COLLISION_END:
 	POP R2
 	POP R1
 	RET
+
+
+;********************************************************************************************************
+;* treat_missile_meteor_collisions
+;
+;********************************************************************************************************	
+
+treat_missile_meteor_collisions:
+	PUSH R1
+	
+	CALL eliminate_missile
+	MOV R1 ,[SELECT_SCREEN]
+	
+	CALL determine_bad_good_collision
+	MOV R1, [COLLISION_TYPE]
+	
+TREAT_MISSILE_BAD_COLLISION:
+	CMP R1, BAD_COLLISION
+	JNZ TREAT_MISSILE_METEOR_COLLISIONS_END
+	CALL display_increase
+
+TREAT_MISSILE_METEOR_COLLISIONS_END:
+	CALL explode_meteor
+	POP R1
+	RET
+
+
+
+;********************************************************************************************************
+;* determine_bad_good_collision
+;
+;********************************************************************************************************	
+determine_bad_good_collision:
+	PUSH R1
+	PUSH R2
+	PUSH R8
+	
+	MOV R1, [R8+WORD_VALUE]
+	
+	
+GOOD_TYPE_COLLISION:
+	MOV R2, GOOD_METEOR_SHAPES
+	CMP R1 , R2
+	JLT BAD_TYPE_COLLISION
+	MOV R1, GOOD_COLLISION
+	MOV [COLLISION_TYPE], R1
+	JMP DETERMINE_BAD_GOOD_COLLISION_END
+
+BAD_TYPE_COLLISION:
+	MOV R1, BAD_COLLISION
+	MOV [COLLISION_TYPE], R1
+
+DETERMINE_BAD_GOOD_COLLISION_END:
+	POP R8
+	POP R2
+	POP R1
+	RET
 	
 ;********************************************************************************************************
 ;* explode_meteor
 ;
-;*******************************************************************************************************	
+;********************************************************************************************************	
 
 explode_meteor:
 	PUSH R0
@@ -889,7 +967,7 @@ explode_meteor:
 	CALL draw_object
 	
 	MOV [SELECT_SCREEN], R0
-	MOV R9, [R8 + NEXT_WORD_VALUE]
+	MOV R9, [R8 + WORD_VALUE]
 	MOV R9, [R9]
 	CALL eliminate_meteor
 	
@@ -1017,7 +1095,7 @@ OBTAIN_LEFT_DOWN_POINT:
 	ROR R1, BYTE_VALUE 
 
 OBTAIN_RIGHT_UP_POINT:
-	MOV R4, [R9+NEXT_WORD_VALUE] 	;
+	MOV R4, [R9+WORD_VALUE] 	;
 	ADD R2, R4
 	SUB R2, 1
 
@@ -1066,9 +1144,9 @@ eliminate_meteor:
 	MOV R0, 0
 	CALL erase_object		; Eliminates meteor from the screen
 	MOV [R8], R0			; Resets reference position of meteor
-	ADD R8 , NEXT_WORD_VALUE	; Stores meteor evolution table address
+	ADD R8 , WORD_VALUE		; Stores meteor evolution table address
 	MOV [R8], R0			; Resets the meteor evolution table to 0
-	ADD R8, NEXT_WORD_VALUE		; Stores steps value adress
+	ADD R8, WORD_VALUE		; Stores steps value adress
 	MOV R0, 1			
 	MOV [R8], R0			; Resets number of steps to 1
 	MOV R2, [METEOR_NUMBER]
@@ -1095,7 +1173,7 @@ select_layout:
 	PUSH R8
 	MOV R6, R8			; Stores METEOR_TABLE in R6
 	ADD R8, OBTAIN_STEPS		; Stores in R8 the steps adress
-	ADD R6, NEXT_WORD_VALUE		; Stores METEOR_TABLE adress that contains meteor evolution table in R6
+	ADD R6, WORD_VALUE		; Stores METEOR_TABLE adress that contains meteor evolution table in R6
 	
 CHECK_STEPS:
 	MOV R0, [R8]			; Stores number of steps in R0
@@ -1109,7 +1187,7 @@ CHECK_STEPS:
 	JNZ ADD_STEPS			; Jumps to ADD_STEPS if the last intsruction is false
 	 		
 	MOV R9, [R6]			; Stores meteor_evolution_table in R9 
-	ADD R9, NEXT_WORD_VALUE		; Obtains next address in meteor_evolution_table
+	ADD R9, WORD_VALUE		; Obtains next address in meteor_evolution_table
 	MOV [R6], R9			; Stores the meteor evolution table in METEOR_TABLE
 	
 ADD_STEPS:
@@ -1146,7 +1224,7 @@ select_meteor:
 ;***********************************************************************************************************************
 ;* display_decrease:
 ;
-; Decreases the value that the display shows by DISPLAY_DECREASE (5) 
+; Decreases the value that the display shows by DISPLAY_DECREASE (-5) according to the display clock
 ;***********************************************************************************************************************
 
 display_decrease:
@@ -1163,7 +1241,24 @@ display_decrease:
 DISPLAY_DECREASE_END:				; End of routine
 	POP R1
 	RET
+
+;***********************************************************************************************************************
+;* display_increase:
+;
+; increases the value that the display shows by DISPLAY_INCREASE (5) 
+;***********************************************************************************************************************
+
+display_increase:
+	PUSH R1	
+	MOV R1, DISPLAY_INCREASE		
+	MOV [DISPLAY_VARIATION], R1		; Changes DISPLAY_VARIATION value to DISPLAY_DECREASE
+	CALL mov_display			; Changes the value that the display shows
+
+DISPLAY_increase_END:				; End of routine
+	POP R1
+	RET
 	
+		
 
 ;***********************************************************************************************************************
 ;* moves_display:

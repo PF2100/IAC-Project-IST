@@ -258,17 +258,17 @@ METEOR_NUMBER:					; Number of meteors in the screen
 DESTROYED_METEORS_NUMBER:
 	WORD 0H
 	
-BAD_METEOR_SHAPES:				; Table of  all BAD type meteor layouts
+BAD_METEOR_SHAPES:						; Table of  all BAD type meteor layouts
 	WORD DEF_METEOR_FAR, DEF_METEOR_CLOSER 
 	WORD DEF_METEOR_SMALL, DEF_METEOR_MEDIUM
 	WORD DEF_METEOR_MAX
 	
-GOOD_METEOR_SHAPES:				; Table of  all ENERGY BOLT layouts
+GOOD_METEOR_SHAPES:						; Table of  all ENERGY BOLT layouts
 	WORD DEF_ENERGY_BOLT_FAR, DEF_ENERGY_BOLT_CLOSER 
 	WORD DEF_ENERGY_BOLT_SMALL, DEF_ENERGY_BOLT_MEDIUM
 	WORD DEF_ENERGY_BOLT_MAX			
 
-METEOR_TABLE:					; Table of all the meteor positions , type and steps it took
+METEOR_TABLE:							; Table of all the meteor positions , type and steps it took
 	BYTE 0H, 0H 
 	WORD 0H, 1H
 	
@@ -292,6 +292,9 @@ RIGHT_UP_POSITION:
 	WORD 0H
 	
 COLLISION_TYPE:
+	WORD 0H
+	
+END_GAME_FLAG:
 	WORD 0H
 	
 
@@ -780,10 +783,10 @@ CHECK_LAYOUT:
 	CALL mov_object_vertically	; Moves the meteor 1 line down
 
 COLLISION_HAPPENED:
-	;CALL check_ship_collision	;
-	;MOV R6, [EXISTS_COLLISION]
-	;CMP R6, 1
-	;JZ MOVE_METEOR_END
+	CALL check_ship_collision	;
+	MOV R6, [EXISTS_COLLISION]
+	CMP R6, 1
+	JZ MOVE_METEOR_END
 	
 	CALL check_missile_collision	;
 	MOV R6, [EXISTS_COLLISION]
@@ -832,8 +835,7 @@ DETECT_SHIP_COLLISION:
 	MOV R6, [EXISTS_COLLISION]
 	CMP R6, 1
 	JNZ CHECK_SHIP_COLLISION_END
-	;CALL treat_ship_meteor_collision
-	;MOV [END_GAME_FLAG],R6
+	CALL treat_ship_meteor_collisions
 	
 	
 CHECK_SHIP_COLLISION_END:
@@ -888,6 +890,36 @@ DETECT_MISSILE_COLLISION_END:
 	POP R6
 	POP R3
 	POP R2
+	POP R1
+	RET
+
+
+;********************************************************************************************************
+;* treat_ship_meteor_collisions
+;********************************************************************************************************
+
+treat_ship_meteor_collisions:
+	PUSH R1
+	PUSH R6
+
+	CALL determine_bad_good_collision
+	MOV R1, [COLLISION_TYPE]
+	
+TREAT_SHIP_BAD_COLLISION:
+	CMP R1, BAD_COLLISION
+	JNZ TREAT_SHIP_GOOD_COLLISIONS
+	MOV R6 ,1
+	MOV [END_GAME_FLAG], R6
+	JMP TREAT_SHIP_METEOR_COLLISIONS_END
+
+TREAT_SHIP_GOOD_COLLISIONS:
+	CALL explode_meteor
+	CALL display_increase
+	MOV R1, MET_TIMER
+	MOV [MET_SPAWN_TIMER], R1
+
+TREAT_SHIP_METEOR_COLLISIONS_END:
+	POP R6
 	POP R1
 	RET
 

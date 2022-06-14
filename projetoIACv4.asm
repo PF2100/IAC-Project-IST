@@ -162,6 +162,12 @@ DEF_METEOR_GOOD:
 DEF_MISSILE:
 	WORD MISSILE_HEIGHT, MISSILE_WIDTH
 	WORD RED
+	
+EXPLODE_METEOR:
+	WORD 4, 4
+	WORD HEART1, HEART1, HEART1, HEART1,HEART1, HEART1, HEART1, HEART1, HEART1, HEART1, HEART1, HEART1, HEART1, HEART1, HEART1,
+	HEART1	
+	
 
 ;*************************************************************************************************************************
 
@@ -221,6 +227,9 @@ MET_SPAWN_TIMER:				; Value to determine the creation of a meteor
 METEOR_NUMBER:					; Number of meteors in the screen
 	WORD 0H
 	
+DESTROYED_METEORS_NUMBER:
+	WORD 0H
+	
 BAD_METEOR_SHAPES:				; Table of  all BAD type meteor layouts
 	WORD DEF_METEOR_FAR, DEF_METEOR_CLOSER 
 	WORD DEF_METEOR_SMALL, DEF_METEOR_MEDIUM
@@ -259,7 +268,7 @@ RIGHT_UP_POSITION:
 
 PLACE 0H
 
-INITIALIZER:
+FIRST_INITIALIZER:
 	MOV BTE, interruption_table	; Iniciates BTE in interruption table
 	MOV SP, STACK_INIT		; Iniciates SP for the stack
 	MOV R0, 0
@@ -289,10 +298,10 @@ MAIN_CYCLE:
 	CALL mov_missile		; Checks if missile is to be shot , moved , or destroyed
 	CALL create_met			; Checks if the pressed button changes the meteor position
 	CALL move_meteors		; Moves all of the meteors if the requirements are set 
-	;CALL check_meteor_collisions	; Checks if there is a meteor -> rover collision
 	CALL mov_ship			; Checks if the pressed button changes the ship position
 	JMP MAIN_CYCLE
 		
+
 
 ;********************************************************************************************************
 ;* mov_ship
@@ -659,6 +668,7 @@ ALLOW_METEOR_MOVEMENT:
 	MOV R1, [METEOR_INTERRUPTION_FLAG]
 	CMP R1, 1				; Checks if there is METEOR_INTERRUPTION_FLAG value is 1
 	JNZ MOVE_MET_END			; Ends routine if last instruction is false
+	CALL clean_explosions
 	MOV [METEOR_INTERRUPTION_FLAG], R3	; Resets METEOR_INTERRUPTION_FLAG to 0
 	CMP R6, 0				; Checks if the number of meteors is 0
 	JZ MOVE_MET_END				; Ends routine if last instruction is True
@@ -669,7 +679,12 @@ GET_METEOR:
 	CALL placement				; Stores meteor reference position (Line in R1 and Column in R2) 
 	CMP R2, 0				; Checks if there is no meteor in this position ( meteor will never be in collumn 0)
 	JZ GET_NEXT_METEOR			; Jumps if there is no meteor in this position
-	CALL move_meteor			; Moves Meteor in this position		
+	CALL move_meteor			; Moves Meteor in this position	
+	
+	;MOV R1,[END_GAME_FLAG]
+	;CMP R1,1
+	;JMP MOVE_MET_END
+	
 	SUB R6, 1				; Subtracts 1 from the number of meteors
 	JZ MOVE_MET_END				; Ends routine if there are no more meteors to take care of
 	
@@ -686,7 +701,29 @@ MOVE_MET_END:
 	POP R3
 	POP R1
 	RET
+
+;********************************************************************************************************
+;*clean_explosions
+;
+; Deletes all destroyed meteors from the 	
+; 
+;********************************************************************************************************	
+
+
+
+clean_explosions:
+	PUSH R0
+	PUSH R1
+	MOV R1, [MISSILE_INTERRUPTION_FLAG]
+	CMP R1, 0
+	JZ CLEAN_EXPLOSION_END
+	MOV R0, 5
+	MOV [6000H], R0
 	
+CLEAN_EXPLOSION_END:
+	POP R1
+	POP R0
+	RET 	
 	
 ;********************************************************************************************************
 ;*move_meteor
@@ -710,7 +747,7 @@ CHECK_LAYOUT:
 	MOV R9, [R7]			; Stores meteor layout in R9
 	CALL mov_object_vertically	; Moves the meteor 1 line down
 	CALL check_missile_collision	;
-	;CALL check_rover_collision	;
+	CALL check_ship_collision	;
 	CALL check_meteor_limits	; Eliminates de meteor if it has reached its maximum line
 
 move_meteor_end:			; Ends routine
@@ -722,8 +759,53 @@ move_meteor_end:			; Ends routine
 	RET
 
 
+
+
 ;********************************************************************************************************
-;* check_meteor_collision
+;* check_rover_collision
+;********************************************************************************************************
+
+check_ship_collision:
+	PUSH R1
+	PUSH R2
+	PUSH R3
+	PUSH R6
+	PUSH R7
+	PUSH R8
+	PUSH R9
+	
+	
+	MOV R1, [R8]			;
+	CALL obtain_reference_points	; 
+	MOV [LEFT_DOWN_POSITION], R1	; 
+	MOV [RIGHT_UP_POSITION], R2	;
+
+	MOV R7, SHIP_PLACE		;	
+	MOV R9, DEF_SHIP		;
+	CALL check_collisions
+
+DETECT_SHIP_COLLISION:
+	MOV R6, [EXISTS_COLLISION]
+	CMP R6, 1
+	JNZ CHECK_SHIP_COLLISION_END
+	
+	MOV R6 , 0
+	MOV [EXISTS_COLLISION], R6
+	
+	
+CHECK_SHIP_COLLISION_END:
+	POP R9
+	POP R8
+	POP R7
+	POP R6
+	POP R3
+	POP R2
+	POP R1
+	RET
+	
+	
+;********************************************************************************************************
+;* check_missile_collision
 ;********************************************************************************************************
 
 check_missile_collision:
@@ -745,17 +827,17 @@ check_missile_collision:
 	MOV R9, DEF_MISSILE		;
 	CALL check_collisions
 
-DETECT_COLLISION:
+DETECT_MISSILE_COLLISION:
 	MOV R6, [EXISTS_COLLISION]
 	CMP R6, 1
-	JNZ DETECT_COLLISION_END
-	;CALL explode_meteor
-	;CALL elminate_missile
+	JNZ DETECT_MISSILE_COLLISION_END
+	CALL eliminate_missile
+	CALL explode_meteor
 	MOV R6 , 0
 	MOV [EXISTS_COLLISION], R6
 	
 	
-DETECT_COLLISION_END:
+DETECT_MISSILE_COLLISION_END:
 	POP R9
 	POP R8
 	POP R7
@@ -764,6 +846,72 @@ DETECT_COLLISION_END:
 	POP R2
 	POP R1
 	RET
+	
+;********************************************************************************************************
+;* explode_meteor
+;
+;*******************************************************************************************************	
+
+explode_meteor:
+	PUSH R0
+	PUSH R1
+	PUSH R8
+	PUSH R9
+	MOV R0, [SELECT_SCREEN]
+	
+	MOV R1, 5
+	MOV [SELECT_SCREEN], R1
+	CALL placement
+	MOV R9, EXPLODE_METEOR
+	CALL draw_object
+	
+	MOV [SELECT_SCREEN], R0
+	MOV R9, [R8 + NEXT_WORD_VALUE]
+	MOV R9, [R9]
+	CALL eliminate_meteor
+	
+	POP R9
+	POP R8
+	POP R1
+	POP R0
+	RET
+	
+		
+;********************************************************************************************************
+;* eliminate_missile
+;
+;*******************************************************************************************************
+
+eliminate_missile:
+	PUSH R0
+	PUSH R1
+	PUSH R2
+	PUSH R8
+	PUSH R9
+	
+	MOV R0, [SELECT_SCREEN]
+	MOV R1, 0
+	MOV [SELECT_SCREEN], R1
+	
+	MOV R8, MISSILE_PLACE
+	MOV R9, DEF_MISSILE
+	CALL placement
+	CALL erase_object
+	
+	MOV R1, 0			
+	MOV [R8], R1
+	MOV [SELECT_SCREEN], R0
+	
+	POP R9
+	POP R8
+	POP R2
+	POP R1
+	POP R0
+	RET
+	
+	
+	
+
 
 ;********************************************************************************************************
 ;* check_meteor_limits
@@ -896,7 +1044,7 @@ eliminate_meteor:
 	CALL erase_object		; Eliminates meteor from the screen
 	MOV [R8], R0			; Resets reference position of meteor
 	ADD R8 , NEXT_WORD_VALUE	; Stores meteor evolution table address
-	MOV [R8], R0			; Resets the meteor evoluton table to 0
+	MOV [R8], R0			; Resets the meteor evolution table to 0
 	ADD R8, NEXT_WORD_VALUE		; Stores steps value adress
 	MOV R0, 1			
 	MOV [R8], R0			; Resets number of steps to 1

@@ -66,7 +66,7 @@ MAX_COLUMN		EQU 63       	; Rightmost column that the object can fill
 DELAY			EQU 400H	; Delay used to speed down the movement of the ship
 PEN			EQU 1H		; Flag used to write pixels
 ERASER			EQU 0H		; Flag used to erase pixels
-MOV_TIMER		EQU 010H	; Movement delay definition
+MOV_TIMER		EQU 015H	; Movement delay definition
 
 
 ;***SPACESHIP*************************************************************************************************************

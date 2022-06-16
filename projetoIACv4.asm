@@ -269,12 +269,12 @@ METEOR_NUMBER:				; Number of meteors in the screen
 	WORD 0H
 
 	
-BAD_METEOR_SHAPES:						; Table of all BAD type meteor layouts
+BAD_METEOR_SHAPES:			; Table of all BAD type meteor layouts
 	WORD DEF_OBJECT_FAR, DEF_OBJECT_CLOSER 
 	WORD DEF_METEOR_SMALL, DEF_METEOR_MEDIUM
 	WORD DEF_METEOR_MAX
 	
-GOOD_METEOR_SHAPES:						; Table of all ENERGY BOLT layouts
+GOOD_METEOR_SHAPES:			; Table of all ENERGY BOLT layouts
 	WORD DEF_OBJECT_FAR, DEF_OBJECT_CLOSER 
 	WORD DEF_ENERGY_BOLT_SMALL, DEF_ENERGY_BOLT_MEDIUM
 	WORD DEF_ENERGY_BOLT_MAX			
@@ -546,7 +546,7 @@ MOVE:
 	ADD R8, 1			; Adds 1 to SHIP_PLACE to obtain the column address
 	MOVB [R8], R2			; Changes column position of the ship
 	CALL draw_object		; Draws object in new position
-	;CALL ship_checks_collision
+	CALL ship_checks_collision
 
 SHIP_END:				; Restores stack values in the registers
 	POP R10
@@ -570,27 +570,27 @@ ship_checks_collision:
 	PUSH R6
 	PUSH R8
 	MOV R1, 1				
-	MOV [SELECT_SCREEN], R1			; Selects first meteor screen
+	MOV [SELECT_SCREEN], R1		; Selects first meteor screen
 	
 	MOV R8,METEOR_TABLE
 	MOV R6, [METEOR_NUMBER]
 
 OBTAIN_METEOR:
-	CALL placement				; Stores meteor reference position (Line in R1 and Column in R2) 
-	CMP R2, 0				; Checks if there is no meteor in this position ( meteor will never be in collumn 0)
-	JZ OBTAIN_NEXT_METEOR			; Jumps if there is no meteor in this position
-	CALL check_ship_collision		; Moves Meteor in this position	
+	CALL placement			; Stores meteor reference position (Line in R1 and Column in R2) 
+	CMP R2, 0			; Checks if there is no meteor in this position ( meteor will never be in collumn 0)
+	JZ OBTAIN_NEXT_METEOR		; Jumps if there is no meteor in this position
+	CALL check_ship_collision	; Moves Meteor in this position	
 	
 	MOV R1,[END_GAME_FLAG]
 	CMP R1,1
 	JZ SHIP_CHECKS_COLLISION_END
 	
-	SUB R6, 1				; Subtracts 1 from the number of meteors
-	JZ SHIP_CHECKS_COLLISION_END		; Ends routine if there are no more meteors to take care of
+	SUB R6, 1			; Subtracts 1 from the number of meteors
+	JZ SHIP_CHECKS_COLLISION_END	; Ends routine if there are no more meteors to take care of
 	
 OBTAIN_NEXT_METEOR:
-	CALL select_meteor			; Selects next meteor from the METEOR_TABLE
-	JMP OBTAIN_METEOR			; Repeats GET_METEOR cycle until all meteors are checked
+	CALL select_meteor		; Selects next meteor from the METEOR_TABLE
+	JMP OBTAIN_METEOR		; Repeats GET_METEOR cycle until all meteors are checked
 	
 SHIP_CHECKS_COLLISION_END:
 	MOV R1, 0

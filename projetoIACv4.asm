@@ -837,6 +837,7 @@ STORE_BUILD_METEOR_END:
 	POP R1
 	RET	
 
+
 ;********************************************************************************************************
 ;* random_met_place
 ;
@@ -866,13 +867,13 @@ LAST_POSSIBLE_COL:
 	SHL R2, 3
 	ADD R2, R1
 
-
 RANDOM_PLACE_END:
 	POP R4
 	POP R3
 	POP R1
 	POP R0
 	RET
+	
 
 ;********************************************************************************************************
 ;* random_met_type
@@ -906,6 +907,7 @@ RANDOM_TYPE_END:
 	POP R1
 	POP R0
 	RET
+	
 	
 ;********************************************************************************************************
 ;*move_meteors
@@ -967,14 +969,13 @@ MOVE_MET_END:
 	POP R1
 	RET
 
+
 ;********************************************************************************************************
 ;*clean_explosions
 ;
 ; Deletes all destroyed meteors from the 	
 ; 
 ;********************************************************************************************************	
-
-
 
 clean_explosions:
 	PUSH R0
@@ -989,6 +990,7 @@ CLEAN_EXPLOSION_END:
 	POP R1
 	POP R0
 	RET 	
+	
 	
 ;********************************************************************************************************
 ;*move_meteor
@@ -1037,8 +1039,6 @@ MOVE_METEOR_END:			; Ends routine
 	RET
 
 
-
-
 ;********************************************************************************************************
 ;* check_rover_collision
 ;********************************************************************************************************
@@ -1051,7 +1051,6 @@ check_ship_collision:
 	PUSH R7
 	PUSH R8
 	PUSH R9
-	
 	
 	MOV R1, [R8]				;
 	CALL obtain_reference_points		; 
@@ -1067,7 +1066,6 @@ DETECT_SHIP_COLLISION:
 	CMP R6, 1
 	JNZ CHECK_SHIP_COLLISION_END
 	CALL treat_ship_meteor_collisions
-	
 	
 CHECK_SHIP_COLLISION_END:
 	POP R9
@@ -1112,8 +1110,6 @@ DETECT_MISSILE_COLLISION:
 	JNZ DETECT_MISSILE_COLLISION_END
 	CALL treat_missile_meteor_collisions
 
-	
-	
 DETECT_MISSILE_COLLISION_END:
 	POP R9
 	POP R8
@@ -1182,11 +1178,11 @@ TREAT_MISSILE_METEOR_COLLISIONS_END:
 	RET
 
 
-
 ;********************************************************************************************************
 ;* determine_bad_good_collision
 ;
 ;********************************************************************************************************	
+
 determine_bad_good_collision:
 	PUSH R1
 	PUSH R2
@@ -1211,6 +1207,7 @@ DETERMINE_BAD_GOOD_COLLISION_END:
 	POP R2
 	POP R1
 	RET
+	
 	
 ;********************************************************************************************************
 ;* explode_meteor
@@ -1273,9 +1270,6 @@ eliminate_missile:
 	POP R1
 	POP R0
 	RET
-	
-	
-	
 
 
 ;********************************************************************************************************
@@ -1328,7 +1322,6 @@ CHECK_RIGHT_SIDE:
 	MOV R0, 1
 	MOV [EXISTS_COLLISION], R0	; Activates collision_FLAG
 
-
 CHECK_COLLISIONS_END:
 	POP R6
 	POP R5
@@ -1338,6 +1331,7 @@ CHECK_COLLISIONS_END:
 	POP R1
 	POP R0
 	RET
+	
 
 ;********************************************************************************************************
 ;* obtain_reference_positions
@@ -1368,6 +1362,8 @@ OBTAIN_REFERENCE_POINTS_END:
 	POP R4
 	POP R3
 	RET
+	
+	
 ;********************************************************************************************************
 ;* check_meteor_limits
 ;
@@ -1503,6 +1499,7 @@ display_clock_decrease:
 DISPLAY_CLOCK_DECREASE_END:			; End of routine
 	POP R1
 	RET
+
 
 ;***********************************************************************************************************************
 ;* display_increase:
@@ -2032,11 +2029,12 @@ reset_game:
 	MOV [SHIP_PLACE], R0
 	CALL reset_meteor_table
 	CALL reset_flags
-	MOV R0 , 0
+	MOV R0, 0
 	MOV [MISSILE_PLACE], R0
 	POP R0
 	POP R1
 	RET
+
 
 ;*****************************************************************************************
 ;*reset_meteor_table: 
@@ -2068,8 +2066,6 @@ RESET_METEOR_TABLE_END:
 	POP R0
 	RET
 	
-
-
 	
 ;*****************************************************************************************
 ;*reset_flags: 
@@ -2086,9 +2082,6 @@ reset_flags:
 	POP R0
 	RET
 
-
-
-	
 
 ;*****************************************************************************************
 ;*INTERRUPTIONS

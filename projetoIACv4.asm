@@ -17,8 +17,6 @@ INJECTED_LINE 	EQU BYTE_VALUE		; Initial keypad line (fourth)
 KEY_LIN 	EQU 0C000H		; Keyboard Rows
 KEY_COL 	EQU 0E000H		; Keyboard Columns
 KEY_MASK	EQU 0FH			; Isolates the lower nibble from the output of the keypad
-BUTTON		EQU 0900H   		; Stores the pressed button
-LAST_BUTTON 	EQU 0902H		; Stores previous pressed button (prior to the current)
 NO_BUTTON	EQU 0FFFFH		; Value of no pressed button
 
 
@@ -112,6 +110,7 @@ NEXT_METEOR_VALUE	EQU 06H
 OBTAIN_STEPS		EQU 04H
 GOOD_COLLISION		EQU 1
 BAD_COLLISION		EQU 0
+MAXIMUM_METEOR_NUMBER 	EQU 4
 
 
 
@@ -217,12 +216,17 @@ interruption_table:
 	
 		
 ;**************************************************************************************************************************	
+BUTTON:
+	WORD 0H
 	
+LAST_BUTTON:
+	WORD 0H
+
 SHIP_PLACE:					; Reference to the position of ship 
 	BYTE LINE, COLUMN			; First byte of the word stores the line and the second one the column
 	
 MISSILE_PLACE:					; Reference to the position of the missile 
-	BYTE MISSILE_LINE, MISSILE_COLUMN	; First byte of the word stores the line and the second one the column
+	BYTE 0H, 0H				; First byte of the word stores the line and the second one the column
 
 MISSILE_STEPS:
 	WORD 0H
@@ -241,7 +245,7 @@ DELAY_COUNTER:					; Counter until MOV_TIMER is reached and ship moves
 	WORD 0H
 
 DISPLAY_VALUE:
-	WORD UPPER_BOUND			; Energy display initial value
+	WORD 100H				; Energy display initial value
 
 DISPLAY_VARIATION:				; Energy display variation value
 	WORD 0H
@@ -263,9 +267,7 @@ MET_SPAWN_TIMER:				; Value to determine the creation of a meteor
 
 METEOR_NUMBER:					; Number of meteors in the screen
 	WORD 0H
-	
-DESTROYED_METEORS_NUMBER:
-	WORD 0H
+
 	
 BAD_METEOR_SHAPES:						; Table of  all BAD type meteor layouts
 	WORD DEF_OBJECT_FAR, DEF_OBJECT_CLOSER 
@@ -447,7 +449,7 @@ END_BUTTON_CHECK:
 END_CHECK:
 	CMP R2, 1
 	JNZ COMMANDS_END
-	;CALL end_game_menu
+	CALL end_game_menu
 	
 COMMANDS_END:
 	POP R2
@@ -495,8 +497,8 @@ PRESSED_END_BUTTON:
 pause_end:
 	MOV [6044H], R3
 	MOV [RESUME_SOUND_VIDEO], R3	
-	POP R2
 	POP R3
+	POP R2
 	POP R1
 	POP R0
 	RET
@@ -1993,27 +1995,111 @@ same_button:
 	MOV R1, [LAST_BUTTON]		; Stores previous pressed button in R1
 	RET
 	
+	
 ;*****************************************************************************************
-;* show_hide_screens: 
+;* end_game_menu
 ;
 ;*****************************************************************************************	
 
-show_hide_screens:
+end_game_menu:
 	PUSH R0
 	PUSH R1
-	MOV R0, 0
-	MOV R1, 6
+	PUSH R2
+	MOV R2, 3
+	;MOV [SELECT_FOREGROUND],R2
+	MOV [6068H], R2
+	MOV [DEL_SCREEN], R2
+	MOV R2, 3
+	MOV [START_SOUND_VIDEO], R2
 	
-SHOW_HIDE_SCREENS_CYCLE:
-	MOV [R2],R1
-	JZ SHOW_HIDE_SCREENS_END
-	SUB R1, 1
-	JMP SHOW_HIDE_SCREENS_CYCLE
+END_GAME_CYCLE:
+	CALL keypad
+	MOV R1, [BUTTON]
+	MOV R0, START
+	CMP R1, R0
+	JNZ END_GAME_CYCLE
 	
-SHOW_HIDE_SCREENS_END:
+	
+END_GAME_RETURN:
+	CALL reset_game
+	CALL start_game
+	POP R2
 	POP R1
 	POP R0
 	RET
+	
+	
+;*****************************************************************************************
+;*reset_game 
+;
+;*****************************************************************************************
+
+reset_game:
+	PUSH R0
+	PUSH R1
+	MOV R0, LINE
+	MOV R1, COLUMN
+	SHL R0, 8
+	OR R0, R1
+	MOV [SHIP_PLACE], R0
+	CALL reset_meteor_table
+	CALL reset_flags
+	MOV R0 , 0
+	MOV [MISSILE_PLACE], R0
+	POP R0
+	POP R1
+	RET
+
+;*****************************************************************************************
+;*reset_meteor_table: 
+;
+;*****************************************************************************************
+reset_meteor_table:
+	PUSH R0
+	PUSH R1
+	PUSH R2
+	PUSH R8
+	MOV R1, MAXIMUM_METEOR_NUMBER
+	MOV R0, 0
+	MOV R2, 1
+	MOV R8, METEOR_TABLE
+
+CLEAN_TABLE:
+	MOV [R8], R0
+	MOV [R8+2H], R0
+	MOV [R8+4H], R2
+	ADD R8 , NEXT_METEOR_VALUE
+	SUB R1, 1
+	JNZ CLEAN_TABLE
+
+RESET_METEOR_TABLE_END:
+	MOV [METEOR_NUMBER], R1
+	POP R8
+	POP R2
+	POP R1
+	POP R0
+	RET
+	
+
+
+	
+;*****************************************************************************************
+;*reset_flags: 
+;
+;*****************************************************************************************
+
+reset_flags:
+	PUSH R0
+	MOV R0, 0
+	MOV [DELAY_COUNTER], R0
+	MOV [DELAY_FLAG], R0
+	MOV [EXISTS_COLLISION], R0
+	MOV [END_GAME_FLAG],R0
+	POP R0
+	RET
+
+
+
 	
 
 ;*****************************************************************************************

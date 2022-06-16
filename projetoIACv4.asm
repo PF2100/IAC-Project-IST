@@ -7,10 +7,6 @@
 ;********************************************************************************************************
 
 
-; PEDRO - check_missile_limits ( falta colisões missil->meteoro) , mov_meteor (falta selecionar o tipo de tamanho e colisões 
-;	 meteoro->rover ) , MENUS DE PAUSA , game over quando  existirem colisoes ou display value a
-
-
 ;****KEYPAD****************************************************************************
 
 WORD_VALUE		EQU 02H
@@ -52,11 +48,23 @@ SHOOT		EQU	01H		; Shoot missile
 DEF_LINE    		EQU 600AH	; Define line command adress 
 DEF_COL  		EQU 600CH	; Define column command adress
 DEF_PIXEL    		EQU 6012H	; Write pixel command adress
-DEL_WARNING     	EQU 6040H	; Ignore no background warning command adress
+DEL_WARNING     	EQU 6040H	; Delete no background warning command adress
 DEL_SCREEN		EQU 6002H	; Delete all pixels drawn command adress
+
+SELECT_FOREGROUND	EQU 6046H
 SELECT_BACKGROUND 	EQU 6042H	; Select background command adress
 SELECT_SCREEN		EQU 6004H	; Select pixel screen
+SHOW_SCREEN		EQU 6006H	;
+HIDE_SCREEN		EQU 6008H	;
+
+
 PLAY_SOUND_VIDEO	EQU 605AH	;
+START_SOUND_VIDEO	EQU 605CH	;
+PAUSE_SOUND_VIDEO	EQU 605EH	;
+RESUME_SOUND_VIDEO	EQU 6060H
+END_SOUND_VIDEO		EQU 6066H
+
+
 
 
 ;***SCREEN*******************************************************************************************
@@ -66,7 +74,7 @@ MAX_COLUMN		EQU 63       	; Rightmost column that the object can fill
 DELAY			EQU 400H	; Delay used to speed down the movement of the ship
 PEN			EQU 1H		; Flag used to write pixels
 ERASER			EQU 0H		; Flag used to erase pixels
-MOV_TIMER		EQU 015H	; Movement delay definition
+MOV_TIMER		EQU 010H	; Movement delay definition
 
 
 ;***SPACESHIP*************************************************************************************************************
@@ -219,8 +227,6 @@ MISSILE_PLACE:					; Reference to the position of the missile
 MISSILE_STEPS:
 	WORD 0H
 
-METEOR_PLACE:
-	BYTE METEOR_LINE, METEOR_COLUMN		; First byte of the word stores the line and the second one the column
 	
 CHANGE_COL:					; Stores column variation of the position of the object
 	WORD 0H
@@ -308,37 +314,194 @@ PLACE 0H
 FIRST_INITIALIZER:
 	MOV BTE, interruption_table	; Iniciates BTE in interruption table
 	MOV SP, STACK_INIT		; Iniciates SP for the stack
-	MOV R0, 0
 	EI0				; Allows meteor_interruption 
 	EI1				; Allows missile_interruption 
 	EI2				; Allows energy_interruption 
 	EI				; Allows all interruptions
+	
+	
+SECOND_INITIALIZER:
+	CALL initial_screen_menu
+    	CALL start_game
+    
 
-	MOV [DEL_WARNING], R0		; Deletes no background warning (R0 value is irrelevant)
-	MOV [DEL_SCREEN], R0		; Deletes all drawn pixels (R0 value is irrelevant)
-    	MOV [SELECT_BACKGROUND], R0	; Selects background
-    	MOV R0, 0100H			; Stores energy display initial value in R0
-	MOV [DISPLAY], R0		; Initializes display
-	MOV R0, UPPER_BOUND
-	MOV [DISPLAY_VALUE], R0
-
-BUILD_SHIP:
-	MOV R8, SHIP_PLACE		; Stores line in the first byte of R8 and column on the second one
-	MOV R9, DEF_SHIP 		; Stores ship layout
-	CALL placement			; Stores the ship position reference, R1 stores line and R2 stores column
-	CALL erase_object		; Deletes ship from screen
-	CALL draw_object		; Draws ship
 
 MAIN_CYCLE:
 	CALL keypad			; Checks if there is a pressed button
+	CALL commands
 	CALL display_clock_decrease	; Checks if the pressed button changes the display
 	CALL mov_missile		; Checks if missile is to be shot , moved , or destroyed
 	CALL create_met			; Checks if the pressed button changes the meteor position
 	CALL move_meteors		; Moves all of the meteors if the requirements are set 
 	CALL mov_ship			; Checks if the pressed button changes the ship position
 	JMP MAIN_CYCLE
-		
 
+
+;********************************************************************************************************
+;*initial_screen
+;
+;********************************************************************************************************		
+
+
+initial_screen_menu:
+	PUSH R0
+	PUSH R1
+	MOV R0, 0
+	MOV [DEL_WARNING], R0		; Deletes no background warning (R0 value is irrelevant)
+	MOV [DEL_SCREEN], R0		; Deletes all drawn pixels (R0 value is irrelevant)
+	
+	MOV R1, 2
+    	MOV [START_SOUND_VIDEO], R1
+    	MOV [SELECT_BACKGROUND], R1
+	
+INITIAL_SCREEN_LOOP:
+	CALL keypad
+	MOV R1, START
+	MOV R0, [BUTTON]
+	CMP R1, R0
+	JNZ INITIAL_SCREEN_LOOP
+	MOV R0, 2
+	MOV [6068H],R0
+	POP R1
+	POP R0
+	RET
+	
+
+	
+;********************************************************************************************************
+;* start_game
+;
+;********************************************************************************************************
+
+start_game:
+	PUSH R0
+	PUSH R1
+	MOV [6068H], R0
+	MOV [6044H], R0	
+	MOV R0, 1
+	MOV [START_SOUND_VIDEO], R0
+	MOV [SELECT_BACKGROUND], R0  
+	
+	CALL build_ship	
+	
+    	MOV R0, 0100H			; Stores energy display initial value in R0
+	MOV [DISPLAY], R0		; Initializes display
+	MOV R0, UPPER_BOUND
+	MOV [DISPLAY_VALUE], R0
+	POP R1
+	POP R0
+	RET
+	
+;********************************************************************************************************
+;*BUILD_SHIP
+;
+;********************************************************************************************************
+
+build_ship:
+	PUSH R1
+	PUSH R2
+	PUSH R8
+	PUSH R9
+	
+	MOV R8, SHIP_PLACE		; Stores line in the first byte of R8 and column on the second one
+	MOV R9, DEF_SHIP 		; Stores ship layout
+	CALL placement			; Stores the ship position reference, R1 stores line and R2 stores column
+	CALL draw_object		; Draws ship
+	
+	POP R9
+	POP R8
+	POP R2
+	POP R1
+	RET	
+	
+
+;********************************************************************************************************
+;* commands
+;
+;********************************************************************************************************
+
+commands:
+	PUSH R0
+	PUSH R1
+	PUSH R2
+	MOV R0, [BUTTON]
+	MOV R2, [END_GAME_FLAG]
+
+PAUSE_BUTTON_CHECK:
+	MOV R1, PAUSE
+	CMP R0, R1
+	JNZ END_BUTTON_CHECK
+	MOV R1, [LAST_BUTTON]
+	CMP R0, R1
+	JZ END_CHECK
+	CALL pause_menu
+	JMP END_CHECK
+	
+	
+END_BUTTON_CHECK:
+	MOV R1, END
+	CMP R0, R1
+	JNZ END_CHECK
+	MOV R2, 1
+	
+END_CHECK:
+	CMP R2, 1
+	JNZ COMMANDS_END
+	;CALL end_game_menu
+	
+COMMANDS_END:
+	POP R2
+	POP R1
+	POP R0
+	RET
+
+;********************************************************************************************************
+;*pause_menu
+;
+; 
+;********************************************************************************************************
+
+pause_menu:
+	PUSH R0
+	PUSH R1
+	PUSH R2
+	PUSH R3
+	MOV R3, 0
+	MOV [SELECT_FOREGROUND],R3
+	MOV R3, 1
+	MOV [PAUSE_SOUND_VIDEO], R3		;Para a musica
+	
+ciclo:
+	CALL keypad
+	MOV R1, [BUTTON]
+	MOV R0, END
+	CMP R1, R0
+	JZ PRESSED_END_BUTTON
+	
+	MOV R0, PAUSE
+	CMP R1, R0
+	JNZ ciclo
+	
+	MOV R0, [LAST_BUTTON]
+	CMP R1, R0
+	JZ ciclo
+	
+	JMP pause_end
+	
+PRESSED_END_BUTTON:
+	MOV R1, 1
+	MOV [END_GAME_FLAG], R1
+	
+pause_end:
+	MOV [6044H], R3
+	MOV [RESUME_SOUND_VIDEO], R3	
+	POP R2
+	POP R3
+	POP R1
+	POP R0
+	RET
+	
+	
 
 ;********************************************************************************************************
 ;* mov_ship
@@ -1830,7 +1993,29 @@ same_button:
 	MOV R1, [LAST_BUTTON]		; Stores previous pressed button in R1
 	RET
 	
+;*****************************************************************************************
+;* show_hide_screens: 
+;
+;*****************************************************************************************	
+
+show_hide_screens:
+	PUSH R0
+	PUSH R1
+	MOV R0, 0
+	MOV R1, 6
 	
+SHOW_HIDE_SCREENS_CYCLE:
+	MOV [R2],R1
+	JZ SHOW_HIDE_SCREENS_END
+	SUB R1, 1
+	JMP SHOW_HIDE_SCREENS_CYCLE
+	
+SHOW_HIDE_SCREENS_END:
+	POP R1
+	POP R0
+	RET
+	
+
 ;*****************************************************************************************
 ;*INTERRUPTIONS
 ;

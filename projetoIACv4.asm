@@ -13,11 +13,11 @@ WORD_VALUE		EQU 02H
 LOWER_BYTE_MASK		EQU 00FFH
 BYTE_VALUE		EQU 8
 
-INJECTED_LINE 	EQU BYTE_VALUE		; Initial keypad line (fourth)
-KEY_LIN 	EQU 0C000H		; Keyboard Rows
-KEY_COL 	EQU 0E000H		; Keyboard Columns
-KEY_MASK	EQU 0FH			; Isolates the lower nibble from the output of the keypad
-NO_BUTTON	EQU 0FFFFH		; Value of no pressed button
+INJECTED_LINE 		EQU BYTE_VALUE		; Initial keypad line (fourth)
+KEY_LIN 		EQU 0C000H		; Keyboard Rows
+KEY_COL 		EQU 0E000H		; Keyboard Columns
+KEY_MASK		EQU 0FH			; Isolates the lower nibble from the output of the keypad
+NO_BUTTON		EQU 0FFFFH		; Value of no pressed button
 
 
 ;****DISPLAY****************************************************************************
@@ -33,12 +33,12 @@ DISPLAY_INCREASE	EQU 15
 
 ;****KEYPAD COMMANDS*******************************************************************
 
-START		EQU	0CH		; Start game
-PAUSE		EQU	0DH		; Pause game
-END		EQU	0EH		; End game
-LEFT		EQU	00H		; Move ship left
-RIGHT		EQU	02H		; Move ship right
-SHOOT		EQU	01H		; Shoot missile
+START			EQU 0CH			; Start game
+PAUSE			EQU 0DH			; Pause game
+END			EQU 0EH			; End game
+LEFT			EQU 00H			; Move ship left
+RIGHT			EQU 02H			; Move ship right
+SHOOT			EQU 01H			; Shoot missile
 
 
 ;***MEDIA CENTER COMMANDS**************************************************************
@@ -210,9 +210,9 @@ EXPLODE_METEOR:
 ;*************************************************************************************************************************
 
 interruption_table:
-	WORD meteor_interruption	; meteor interruption routine
-	WORD missile_interruption	; missile interruption routine
-	WORD energy_interruption	; energy interruption routine	
+	WORD meteor_interruption	; Meteor interruption routine
+	WORD missile_interruption	; Missile interruption routine
+	WORD energy_interruption	; Energy interruption routine	
 	
 		
 ;**************************************************************************************************************************	
@@ -222,64 +222,64 @@ BUTTON:
 LAST_BUTTON:
 	WORD 0H
 
-SHIP_PLACE:					; Reference to the position of ship 
-	BYTE LINE, COLUMN			; First byte of the word stores the line and the second one the column
+SHIP_PLACE:				; Reference to the position of ship 
+	BYTE LINE, COLUMN		; First byte of the word stores the line and the second one the column
 	
-MISSILE_PLACE:					; Reference to the position of the missile 
-	BYTE 0H, 0H				; First byte of the word stores the line and the second one the column
+MISSILE_PLACE:				; Reference to the position of the missile 
+	BYTE 0H, 0H			; First byte of the word stores the line and the second one the column
 
 MISSILE_STEPS:
 	WORD 0H
 
 	
-CHANGE_COL:					; Stores column variation of the position of the object
+CHANGE_COL:				; Stores column variation of the position of the object
 	WORD 0H
 	
-CHANGE_LINE:					; Stores line variation of the position of the object
+CHANGE_LINE:				; Stores line variation of the position of the object
 	WORD 0H
 
-PEN_MODE:					; Flag used to either draw or erase pixels by draw_object and erase_object
+PEN_MODE:				; Flag used to either draw or erase pixels by draw_object and erase_object
 	WORD 0H
 	
-DELAY_COUNTER:					; Counter until MOV_TIMER is reached and ship moves
+DELAY_COUNTER:				; Counter until MOV_TIMER is reached and ship moves
 	WORD 0H
 
 DISPLAY_VALUE:
-	WORD 100H				; Energy display initial value
+	WORD 100H			; Energy display initial value
 
-DISPLAY_VARIATION:				; Energy display variation value
+DISPLAY_VARIATION:			; Energy display variation value
 	WORD 0H
 	
-DELAY_FLAG:					; Ship movement delay flag
+DELAY_FLAG:				; Ship movement delay flag
 	WORD 0H
 
-METEOR_INTERRUPTION_FLAG:			; Flag to determine the movement of the meteor 
+METEOR_INTERRUPTION_FLAG:		; Flag to determine the movement of the meteor 
 	WORD 0H
 
-MISSILE_INTERRUPTION_FLAG:			; Flag to determine the movement of the missile
+MISSILE_INTERRUPTION_FLAG:		; Flag to determine the movement of the missile
 	WORD 0H
 	
-ENERGY_INTERRUPTION_FLAG:			; Flag to determine the movement of the energy
+ENERGY_INTERRUPTION_FLAG:		; Flag to determine the movement of the energy
 	WORD 0H
 
-MET_SPAWN_TIMER:				; Value to determine the creation of a meteor 
+MET_SPAWN_TIMER:			; Value to determine the creation of a meteor 
 	WORD MET_TIMER
 
-METEOR_NUMBER:					; Number of meteors in the screen
+METEOR_NUMBER:				; Number of meteors in the screen
 	WORD 0H
 
 	
-BAD_METEOR_SHAPES:						; Table of  all BAD type meteor layouts
+BAD_METEOR_SHAPES:						; Table of all BAD type meteor layouts
 	WORD DEF_OBJECT_FAR, DEF_OBJECT_CLOSER 
 	WORD DEF_METEOR_SMALL, DEF_METEOR_MEDIUM
 	WORD DEF_METEOR_MAX
 	
-GOOD_METEOR_SHAPES:						; Table of  all ENERGY BOLT layouts
+GOOD_METEOR_SHAPES:						; Table of all ENERGY BOLT layouts
 	WORD DEF_OBJECT_FAR, DEF_OBJECT_CLOSER 
 	WORD DEF_ENERGY_BOLT_SMALL, DEF_ENERGY_BOLT_MEDIUM
 	WORD DEF_ENERGY_BOLT_MAX			
 
-METEOR_TABLE:							; Table of all the meteor positions , type and steps it took
+METEOR_TABLE:				; Table of all the meteor positions , type and steps it took
 	BYTE 0H, 0H 
 	WORD 0H, 1H
 	
@@ -321,12 +321,9 @@ FIRST_INITIALIZER:
 	EI2				; Allows energy_interruption 
 	EI				; Allows all interruptions
 	
-	
 SECOND_INITIALIZER:
 	CALL initial_screen_menu
     	CALL start_game
-    
-
 
 MAIN_CYCLE:
 	CALL keypad			; Checks if there is a pressed button
@@ -343,7 +340,6 @@ MAIN_CYCLE:
 ;*initial_screen
 ;
 ;********************************************************************************************************		
-
 
 initial_screen_menu:
 	PUSH R0
@@ -369,7 +365,6 @@ INITIAL_SCREEN_LOOP:
 	RET
 	
 
-	
 ;********************************************************************************************************
 ;* start_game
 ;
@@ -439,7 +434,6 @@ PAUSE_BUTTON_CHECK:
 	CALL pause_menu
 	JMP END_CHECK
 	
-	
 END_BUTTON_CHECK:
 	MOV R1, END
 	CMP R0, R1
@@ -457,6 +451,7 @@ COMMANDS_END:
 	POP R0
 	RET
 
+
 ;********************************************************************************************************
 ;*pause_menu
 ;
@@ -471,7 +466,7 @@ pause_menu:
 	MOV R3, 0
 	MOV [SELECT_FOREGROUND],R3
 	MOV R3, 1
-	MOV [PAUSE_SOUND_VIDEO], R3		;Para a musica
+	MOV [PAUSE_SOUND_VIDEO], R3	; Stops the music
 	
 ciclo:
 	CALL keypad
@@ -504,7 +499,6 @@ pause_end:
 	RET
 	
 	
-
 ;********************************************************************************************************
 ;* mov_ship
 ;
@@ -562,6 +556,7 @@ SHIP_END:				; Restores stack values in the registers
 	POP R0
 	RET
 	
+	
 ;********************************************************************************************************
 ;*ship_checks_collision
 ; 
@@ -607,10 +602,6 @@ SHIP_CHECKS_COLLISION_END:
 	POP R0
 	RET
 	
-	
-
-
-
 
 ;********************************************************************************************************
 ;*mov_missile
@@ -707,9 +698,6 @@ SHOOT_MISSILE_END:			; Ends Routine
 	POP R0
 	RET
 	
-	
-
-
 	
 ;********************************************************************************************************
 ;*check_missile_limits

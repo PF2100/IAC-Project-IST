@@ -96,8 +96,7 @@ MISSILE_COLOUR		EQU 0E8EFH
 
 ;***METEORS*************************************************************************************************************
 
-METEOR_LINE		EQU 3		; Meteor initial line
-METEOR_COLUMN		EQU 16		; Meteor initial column
+METEOR_LINE		EQU 0		; Meteor initial line
 METEOR_HEIGHT		EQU 6
 METEOR_WIDTH		EQU 6
 METEOR_COLOUR		EQU 0 		; Hexadecimal value of the colour #
@@ -158,7 +157,7 @@ DEF_OBJECT_FAR:
 
 DEF_OBJECT_CLOSER:
 	WORD 3, 3
-	WORD 0, OUTERBLUE, 0, LIGHTERBLUE, CENTERGREY, LIGHTERBLUE, 0, OUTERBLUE, 0
+	WORD 0, CENTERGREY, 0, CENTERGREY, CENTERGREY, CENTERGREY, 0, CENTERGREY, 0
 	
 
 DEF_METEOR_SMALL:

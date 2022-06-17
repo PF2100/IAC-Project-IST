@@ -1220,8 +1220,12 @@ eliminate_missile:
 
 
 ;********************************************************************************************************
-;* check_meteor_limits
+;* check_collisions:
 ;
+; Checks if there was a collision between a meteor and ship or missile
+;
+; INPUT: 	R7 - Object position reference adress
+;		R9 - Object layout
 ;*******************************************************************************************************
 
 check_collisions:
@@ -1233,41 +1237,37 @@ check_collisions:
 	PUSH R5
 	PUSH R6
 	
-	MOV R1, [R7]
-	CMP R1 , 0
+	MOV R1, [R7]			; Stores object position in R1
+	CMP R1, 0			; MUDARRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 	JZ CHECK_COLLISIONS_END		
-	CALL obtain_reference_points	; R1 LEFT_DOWN, R2 RIGHT_UP OBJECT
-	MOV R3,[LEFT_DOWN_POSITION]	; LEFT_DOWN METEOR REFERECE POSITION
-	MOV R4,[RIGHT_UP_POSITION]	; RIGHT_UP METEOR REFERECE POSITION
+	CALL obtain_reference_points	; Stores LEFT_DOWN in R1 and UP_DOWN in R2 (Object lower left and upper right corners position)
+	MOV R3, [LEFT_DOWN_POSITION]	; Stores meteor LEFT_DOWN point in R3
+	MOV R4, [RIGHT_UP_POSITION]	; Stores meteor RIGHT_UP point in R4
 
 CHECK_LINE:
-	MOV R5, R3 			; STORES METEOR LEFT_DOWN		
-	MOV R6, R2			; STORES OBJECT RIGHT_UP
-	
-	SHR R3, BYTE_VALUE		; OBTAINS METEOR LINE
-	SHR R2, BYTE_VALUE		; OBTAINS OBJECT LINE
+	MOV R5, R3 			; Stores meteor LEFT_DOWN point in R3		
+	MOV R6, R2			; Stores meteor RIGHT_UP point in R6
+	SHR R3, BYTE_VALUE		; Obtains meteor bottom line
+	SHR R2, BYTE_VALUE		; Obtains object upper line
 	CMP R3, R2
-	JLT CHECK_COLLISIONS_END
+	JLT CHECK_COLLISIONS_END	; Ends routine if meteor botoom line is lower than object upper line
 
 CHECK_LEFT_SIDE:
 	MOV R0, LOWER_BYTE_MASK
-	MOV R3 , R5			; STORES METEOR LEFT_DOWN POSITION		
-	MOV R2 , R6			; STORES OBJECT RIGHT_UP POSITION
-	
-	AND R5, R0			; OBTAINS METEOR LEFT COLLUMN
-	AND R6, R0			; OBTAINS OBJECT RIGHT COLLUMN
-	
-	CMP R5 , R6			; Checks if the meteor left collumn is higher than object right collumn
-	JGT CHECK_COLLISIONS_END 	; Jumps if last instruction is true
+	MOV R3, R5			; Stores meteor LEFT_DOWN position		
+	MOV R2, R6			; Stores object RIGHT_UP position
+	AND R5, R0			; Applies lower byte mask to obtain meteor left column
+	AND R6, R0			; Applies lower byte mask to obtain object right column
+	CMP R5, R6
+	JGT CHECK_COLLISIONS_END 	; Ends routine if the meteor left column is further to the right than the object's right column
 
 CHECK_RIGHT_SIDE:
-	AND R4, R0			; OBTAINS METEOR RIGHT COLLUMN
-	AND R1, R0			; OBTAINS OBJECT LEFT COLLUMN
-	
-	CMP R4 , R1			; Checks if the meteor right collumn is lower than object left collumn
-	JLT CHECK_COLLISIONS_END 	; Jumps if last instruction is true
+	AND R4, R0			; Applies lower byte mask to obtain meteor right column
+	AND R1, R0			; Applies lower byte mask to obtain object left column
+	CMP R4, R1			
+	JLT CHECK_COLLISIONS_END 	; Ends routine if the meteor right column is further to the left than the object's left column
 	MOV R0, 1
-	MOV [EXISTS_COLLISION], R0	; Activates collision_FLAG
+	MOV [EXISTS_COLLISION], R0	; Activates EXISTS_COLLISION (collision flag)
 
 CHECK_COLLISIONS_END:
 	POP R6
@@ -1281,28 +1281,34 @@ CHECK_COLLISIONS_END:
 	
 
 ;********************************************************************************************************
-;* obtain_reference_positions
+;* obtain_reference_positions:
 ;
+; Obtains the object position reference points:
+; Lower left corner (LEFT_DOWN) and the upper right corner (RIGHT_UP)
+:
+; INPUT:	R1 - Object position reference (upper left corner)
+;		R9 - Object layout adress (heigth, width and colours)
+; OUPUT:	R1 - LEFT_DOWN point
+;		R2 - RIGHT_UP point
 ;********************************************************************************************************
 		
 obtain_reference_points:			
 	PUSH R3
 	PUSH R4
 	PUSH R9
-	MOV R2, R1
-	
+	MOV R2, R1			; Stores object position reference in R2
 	
 OBTAIN_LEFT_DOWN_POINT:			
-	MOV R3, [R9]			; HEIGHT
-	ROR R1, BYTE_VALUE 			
-	ADD R1, R3
-	SUB R1, 1
-	ROR R1, BYTE_VALUE 
+	MOV R3, [R9]			; Stores object height in R3
+	ROR R1, BYTE_VALUE 		; Rotates line and column (move line to lower byte)
+	ADD R1, R3			; Adds object height to object position reference
+	SUB R1, 1			; Subtracts 1 to the value to obtain the object LEFT_DOWN point
+	ROR R1, BYTE_VALUE 		; Rotates line and column again (move line to upper byte)
 
 OBTAIN_RIGHT_UP_POINT:
-	MOV R4, [R9+WORD_VALUE] 	;
-	ADD R2, R4
-	SUB R2, 1
+	MOV R4, [R9+WORD_VALUE] 	; Stores object width in R4
+	ADD R2, R4			; Adds object width to object position reference
+	SUB R2, 1			; Subtracts 1 to the value to obtain the object RIGHT_UP point
 
 OBTAIN_REFERENCE_POINTS_END:
 	POP R9
@@ -1312,8 +1318,12 @@ OBTAIN_REFERENCE_POINTS_END:
 	
 	
 ;********************************************************************************************************
-;* check_meteor_limits
+;* check_meteor_limits:
 ;
+; Checks if a meteor has reached the lower limit of the screen (Line 31 - 1FH)
+;
+; INPUT:	R8 - METEOR_TABLE
+; 		R9 - Meteor layout	
 ;********************************************************************************************************
 
 check_meteor_limits:
@@ -1323,12 +1333,12 @@ check_meteor_limits:
 	PUSH R3
 	PUSH R8
 	CALL placement			; Stores meteor reference position (Line in R1 and Column in R2)
-	MOV R3, MAX_METEOR_LINE
+	MOV R3, MAX_METEOR_LINE		; Stores lower limit of the screen in R3
 	CMP R1, R3			; Checks if the meteor has reached its maximum possible line value
-	JNZ CHECK_METEOR_LIMITS_END	; JMPS to end of routine if last instruction is false
-	CALL eliminate_meteor		; Eliminates the meteor from the meteor_table and screen
+	JNZ CHECK_METEOR_LIMITS_END	; Ends routine if last instruction is false
+	CALL eliminate_meteor		; Eliminates the meteor from the METEOR_TABLE and the screen
 
-CHECK_METEOR_LIMITS_END:		; End of routine
+CHECK_METEOR_LIMITS_END:
 	POP R8
 	POP R3
 	POP R2
@@ -1338,8 +1348,12 @@ CHECK_METEOR_LIMITS_END:		; End of routine
 	
 	
 ;********************************************************************************************************
-;*eliminate_meteor
+;* eliminate_meteor:
 ;
+; Eliminates a meteor from the table and subtracts 1 from the number of meteors
+;
+; INPUT:	R8 - METEOR_TABLE
+; 		R9 - Meteor layout
 ;********************************************************************************************************
 	
 eliminate_meteor:
@@ -1357,10 +1371,10 @@ eliminate_meteor:
 	MOV R0, 1			
 	MOV [R8], R0			; Resets number of steps to 1
 	MOV R2, [METEOR_NUMBER]
-	SUB R2, 1			; Subtracts 1 from teh number of active meteors
+	SUB R2, 1			; Subtracts 1 from the number of active meteors
 	MOV [METEOR_NUMBER], R2		; Stores new value of active meteors 
 	
-	POP R8				; Ends Routine
+	POP R8
 	POP R2
 	POP R1
 	POP R0
@@ -1368,8 +1382,12 @@ eliminate_meteor:
 		
 	
 ;********************************************************************************************************
-;* select_layout
+;* select_layout:
 ;
+; Determines the meteor layout according to the steps it has taken
+;
+; INPUT: 	R8 - METEOR_TABLE
+; OUTPUT:	R9 - 
 ;********************************************************************************************************
 
 select_layout:

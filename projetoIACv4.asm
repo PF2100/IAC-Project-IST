@@ -7,16 +7,22 @@
 ;********************************************************************************************************
 
 
-;****KEYPAD****************************************************************************
+
 
 WORD_VALUE		EQU 02H
 LOWER_BYTE_MASK		EQU 00FFH
 BYTE_VALUE		EQU 8
+FLAG_ON			EQU 1
+FLAG_OFF		EQU 0
+NO_VALUE		EQU FLAG_OFF
+
+;****KEYPAD****************************************************************************
 INJECTED_LINE 		EQU BYTE_VALUE	; Initial keypad line (fourth)
 KEY_LIN 		EQU 0C000H	; Keyboard Rows
 KEY_COL 		EQU 0E000H	; Keyboard Columns
 KEY_MASK		EQU 0FH		; Isolates the lower nibble from the output of the keypad
 NO_BUTTON		EQU 0FFFFH	; Value of no pressed button
+GET_RANDOM_NUMBER	EQU 5
 
 
 ;****DISPLAY****************************************************************************
@@ -29,6 +35,7 @@ HEXTODEC_CONST		EQU 000AH	; Display hexadecimal to decimal constant
 DISPLAY_DECREASE	EQU -5		; Display decremente value 
 BAD_COLLISION_INCREASE	EQU 10
 GOOD_COLLISION_INCREASE EQU 15
+INITIAL_DISPLAY_VALUE	EQU 0100H
 
 
 ;****KEYPAD COMMANDS*******************************************************************
@@ -47,9 +54,11 @@ DEF_LINE    		EQU 600AH	; Define line command adress
 DEF_COL  		EQU 600CH	; Define column command adress
 DEF_PIXEL    		EQU 6012H	; Write pixel command adress
 DEL_WARNING     	EQU 6040H	; Delete no background warning command adress
-DEL_SCREEN		EQU 6002H	; Delete all pixels drawn command adress
+DEL_ALL_SCREENS		EQU 6002H	; Delete all pixels drawn command adress
+DEL_SCREEN		EQU 6000H
 
-SELECT_FOREGROUND	EQU 6046H
+SELECT_FOREGROUND	EQU 6046H       ;
+DEL_FOREGROUND		EQU 6044H
 SELECT_BACKGROUND 	EQU 6042H	; Select background command adress
 SELECT_SCREEN		EQU 6004H	; Select pixel screen
 SHOW_SCREEN		EQU 6006H	;
@@ -59,7 +68,7 @@ PLAY_SOUND_VIDEO	EQU 605AH	;
 START_SOUND_VIDEO	EQU 605CH	;
 PAUSE_SOUND_VIDEO	EQU 605EH	;
 RESUME_SOUND_VIDEO	EQU 6060H
-END_SOUND_VIDEO		EQU 6066H
+END_ALL_SOUND_VIDEO	EQU 6068H
 
 
 ;***SCREEN*******************************************************************************************
@@ -97,18 +106,18 @@ MISSILE_COLOUR		EQU 0E8EFH
 ;***METEORS*************************************************************************************************************
 
 METEOR_LINE		EQU 0		; Meteor initial line
-METEOR_HEIGHT		EQU 6
-METEOR_WIDTH		EQU 6
+METEOR_HEIGHT		EQU 6H
+METEOR_WIDTH		EQU 6H
 METEOR_COLOUR		EQU 0 		; Hexadecimal value of the colour #
 MET_TIMER		EQU 0100H
 MAX_STEPS		EQU 13		; 
 MAX_METEOR_LINE		EQU 1FH
 NEXT_METEOR_VALUE	EQU 06H
 OBTAIN_STEPS		EQU 04H
-GOOD_COLLISION		EQU 1
-BAD_COLLISION		EQU 0
-MAXIMUM_METEOR_NUMBER 	EQU 4
-
+GOOD_COLLISION		EQU 1H
+BAD_COLLISION		EQU 0H
+MAXIMUM_METEOR_NUMBER 	EQU 4H
+NO_METEORS		EQU 0H
 
 
 YELLOW 			EQU 0FFE0H
@@ -221,39 +230,36 @@ SHIP_PLACE:				; Reference to the position of ship
 MISSILE_PLACE:				; Reference to the position of the missile 
 	BYTE 0H, 0H			; First byte of the word stores the line and the second one the column
 
-MISSILE_STEPS:
-	WORD 0H
-
 	
 CHANGE_COL:				; Stores column variation of the position of the object
-	WORD 0H
+	WORD NO_VALUE
 	
 CHANGE_LINE:				; Stores line variation of the position of the object
-	WORD 0H
+	WORD NO_VALUE
 
 PEN_MODE:				; Flag used to either draw or erase pixels by draw_object and erase_object
-	WORD 0H
+	WORD NO_VALUE
 	
 DELAY_COUNTER:				; Counter until MOV_TIMER is reached and ship moves
 	WORD 0H
 
 DISPLAY_VALUE:
-	WORD 100H			; Energy display initial value
+	WORD INITIAL_DISPLAY_VALUE	; Energy display initial value
 
 DISPLAY_VARIATION:			; Energy display variation value
-	WORD 0H
+	WORD NO_VALUE
 	
 DELAY_FLAG:				; Ship movement delay flag
-	WORD 0H
+	WORD FLAG_OFF
 
 METEOR_INTERRUPTION_FLAG:		; Flag to determine the movement of the meteor 
-	WORD 0H
+	WORD FLAG_OFF
 
 MISSILE_INTERRUPTION_FLAG:		; Flag to determine the movement of the missile
-	WORD 0H
+	WORD FLAG_OFF
 	
 ENERGY_INTERRUPTION_FLAG:		; Flag to determine the movement of the energy
-	WORD 0H
+	WORD FLAG_OFF
 
 MET_SPAWN_TIMER:			; Value to determine the creation of a meteor 
 	WORD MET_TIMER
@@ -272,33 +278,33 @@ GOOD_METEOR_SHAPES:			; Meteor evolution table of all ENERGY BOLT layouts
 	WORD DEF_ENERGY_BOLT_MAX			
 
 METEOR_TABLE:				; Table of all the meteor positions, meteor evolution tables and steps they took
-	BYTE 0H, 0H 
+	BYTE NO_VALUE, NO_VALUE 
+	WORD NO_VALUE, 1H
+	
+	BYTE NO_VALUE, NO_VALUE 
+	WORD NO_VALUE, 1H
+	
+	BYTE NO_VALUE, NO_VALUE 
 	WORD 0H, 1H
 	
-	BYTE 0H, 0H 
-	WORD 0H, 1H
-	
-	BYTE 0H, 0H 
-	WORD 0H, 1H
-	
-	BYTE 0H, 0H 
-	WORD 0H, 1H
+	BYTE NO_VALUE, NO_VALUE 
+	WORD NO_VALUE, 1H
 	
 
 EXISTS_COLLISION:			; Flag that determines if there was a collision
-	WORD 0H
+	WORD NO_VALUE
 	
 LEFT_DOWN_POSITION:			; Lower left corner reference position (meteor)
-	WORD 0H
+	WORD NO_VALUE
 	
 RIGHT_UP_POSITION:			; Upper right corner reference position (meteor)
-	WORD 0H
+	WORD NO_VALUE
 	
 COLLISION_TYPE:				; Flag that determines collision type
-	WORD 0H
+	WORD NO_VALUE
 	
 END_GAME_FLAG:				; Flag that determines if game has ended
-	WORD 0H
+	WORD FLAG_OFF
 	
 
 ;*************************************************************************************************************************
@@ -315,6 +321,7 @@ FIRST_INITIALIZER:
 	
 SECOND_INITIALIZER:
 	CALL initial_screen_menu	; Starts initial screen menu
+	CALL reset_game
     	CALL start_game			; Starts game
 
 MAIN_CYCLE:
@@ -337,10 +344,10 @@ MAIN_CYCLE:
 initial_screen_menu:
 	PUSH R0
 	PUSH R1
-	MOV R0, 0
+	MOV R0, NO_VALUE
 	MOV [DEL_WARNING], R0		; Deletes no background warning (R0 value is irrelevant)
-	MOV [DEL_SCREEN], R0		; Deletes all drawn pixels (R0 value is irrelevant)
-	
+	MOV [DEL_ALL_SCREENS], R0	; Deletes all drawn pixels (R0 value is irrelevant)
+	MOV [DEL_FOREGROUND], R0
 	MOV R1, 2
     	MOV [START_SOUND_VIDEO], R1	; Plays starting music
     	MOV [SELECT_BACKGROUND], R1	; Selects initial screen background
@@ -352,7 +359,7 @@ INITIAL_SCREEN_LOOP:
 	CMP R1, R0
 	JNZ INITIAL_SCREEN_LOOP		; Repeats cycle until START button is pressed
 	MOV R0, 2
-	MOV [6068H],R0			; Ends all video/sounds playing
+	MOV [END_ALL_SOUND_VIDEO],R0	; Ends all video/sounds playing
 	POP R1
 	POP R0
 	RET
@@ -367,15 +374,15 @@ INITIAL_SCREEN_LOOP:
 start_game:
 	PUSH R0
 	PUSH R1
-	MOV [6068H], R0			; Ends all video/sounds playing
-	MOV [6044H], R0			; Deletes foreground screen
+	MOV [END_ALL_SOUND_VIDEO], R0	; Ends all video/sounds playing
+	MOV [DEL_FOREGROUND], R0	; Deletes foreground screen
 	MOV R0, 1
 	MOV [START_SOUND_VIDEO], R0	; Starts gameplay music
 	MOV [SELECT_BACKGROUND], R0  	; Selects background number 1
 	
 	CALL build_ship			; Draws ship in its original position
 	
-    	MOV R0, 0100H			; Stores energy display initial value in R0
+    	MOV R0, INITIAL_DISPLAY_VALUE	; Stores energy display initial value in R0
 	MOV [DISPLAY], R0		; Initializes display
 	MOV R0, UPPER_BOUND
 	MOV [DISPLAY_VALUE], R0		; Changes display value to UPPER_BOUND
@@ -434,10 +441,10 @@ END_BUTTON_CHECK:
 	MOV R1, END
 	CMP R0, R1
 	JNZ END_CHECK		; Jumps if pressed BUTTON is END
-	MOV R2, 1		; Activates END_GAME_FLAG value
+	MOV R2, FLAG_ON		; Activates END_GAME_FLAG value
 	
 END_CHECK:
-	CMP R2, 1
+	CMP R2, FLAG_ON
 	JNZ COMMANDS_END	; Ends routine if END_GAME_FLAG value is 0
 	CALL end_game_menu	; Enters end_game_menu (ends game)
 	
@@ -477,16 +484,16 @@ PAUSE_CYCLE:
 	
 	MOV R0, [LAST_BUTTON]
 	CMP R1, R0
-	JZ PAUSE_CYCLE			; Repeat cycle if LAST_BUTTON and BUTTON are both PAUSE (if button is being pressed to start the pause menu)
+	JZ PAUSE_CYCLE			; Repeat cycle if LAST_BUTTON and BUTTON are both PAUSE (stops first pause_menu entry)
 	
 	JMP PAUSE_END			; Ends routine
 	
 PRESSED_END_BUTTON:
-	MOV R1, 1
+	MOV R1, FLAG_ON
 	MOV [END_GAME_FLAG], R1		; Activates END_GAME_FLAG
 	
 PAUSE_END:
-	MOV [6044H], R3			; Deletes foreground screen 
+	MOV [DEL_FOREGROUND], R3	; Deletes foreground screen 
 	MOV [RESUME_SOUND_VIDEO], R3	; Resumes the gameplay music
 	POP R3
 	POP R2
@@ -509,7 +516,7 @@ mov_ship:
 	PUSH R10
 	
 	MOV R0, [END_GAME_FLAG]
-	CMP R0, 1
+	CMP R0, FLAG_ON
 	JZ SHIP_END			; Ends routine if END_GAME_FLAG is activated
 	
 	MOV R8, SHIP_PLACE		; Stores current ship position
@@ -527,7 +534,7 @@ CHECK_DELAY:
 	MOV R10, MOV_TIMER
 	CALL delay			
 	MOV R10, [DELAY_FLAG]
-	CMP R10, 1
+	CMP R10, FLAG_ON
 	JNZ SHIP_END			; Ends routine if DELAY_COUNTER is neither 0 nor MOV_TIMER
 	
 MOVE:
@@ -535,7 +542,7 @@ MOVE:
 	CALL placement			; Stores ship line in R1 and its column in R2
 	CALL test_ship_limits		; Checks if ship has reached left or right screen limits
 	MOV R7, [CHANGE_COL]		; Stores new column variation value after checking screen limits
-	CMP R7, 0
+	CMP R7, NO_VALUE		;
 	JZ SHIP_END			; Ends routine if column variation is 0
 	CALL erase_object		; Deletes object from current position
 	ADD R2, R7			; Adds column variation to the new reference position of ship
@@ -566,7 +573,7 @@ mov_missile:
 	PUSH R9
 	
 	MOV R1, [END_GAME_FLAG]
-	CMP R0, 1
+	CMP R0, FLAG_ON
 	JZ MOV_MISSILE_END			; Ends routine if END_GAME_FLAG is activated
 	
 	MOV R9, DEF_MISSILE			; Stores missile layout in R9
@@ -574,23 +581,23 @@ mov_missile:
 	CALL shoot_missile			; Shoots a missile if the pressed button is SHOOT and there is no missile in the air
 	
 	MOV R0, [END_GAME_FLAG]
-	CMP R0, 1
+	CMP R0, FLAG_ON
 	JZ MOV_MISSILE_END			; Ends routine if after shooting, END_GAME_FLAG is activated (energy reached 0%)
 	
 	CAll placement				; Stores missile reference position (line in R1, column in R2)
-	CMP R1, 0				; Checks if there is a missile in the air (line will never be 0)
+	CMP R1, NO_VALUE			; Checks if there is a missile in the air (line will never be 0)
 	JZ MOV_MISSILE_END			; Jumps to end of routine if there is no missile in the air
 
 ALLOW_MISSILE_MOV:
 	MOV R0, [MISSILE_INTERRUPTION_FLAG]	
-	CMP R0, 1				
+	CMP R0, FLAG_ON				
 	JNZ MOV_MISSILE_END			; Ends routine if MISSILE_INTERRUPTION_FLAG is not activated
 
 MOVE_DRAW_MISSILE:
 	MOV R0, -1				
 	MOV [CHANGE_LINE], R0			; Changes the Line variation value to -1
 	CALL mov_object_vertically		; Moves the missile vertically 1 line up
-	MOV R0, 0			
+	MOV R0, FLAG_OFF			
 	MOV [MISSILE_INTERRUPTION_FLAG], R0	; Resets the interruption value to 0
 	CALL check_missile_limits		; Checks if the missile has reached its limit position
 	
@@ -622,7 +629,7 @@ shoot_missile:
 	
 GET_MISSILE_POSITION:
 	MOV R0, [MISSILE_PLACE]		; Stores missile placement
-	CMP R0, 0			; Verifies if line and collumn are 0 ( there is no missile flying)
+	CMP R0, NO_VALUE		; Verifies if line and collumn are 0 ( there is no missile flying)
 	JNZ SHOOT_MISSILE_END		; If no missile is in the air, end routine
 	
 DRAW_MISSILE:
@@ -633,7 +640,7 @@ DRAW_MISSILE:
 	MOV R9, DEF_MISSILE		; Stores missile layout
 	Call draw_object		; Draws object
 	MOV [PLAY_SOUND_VIDEO], R0	; Plays shooting sound
-	SHL R1, 8			; Moves R1 to the upper byte
+	SHL R1, BYTE_VALUE		; Moves R1 to the upper byte
 	OR R1, R2			; Stores line and column together in R1
 	MOV [MISSILE_PLACE], R1		; Stores in memory the missile reference position
 	CALL display_decrease		; Decreases display value by 5%
@@ -667,7 +674,7 @@ MISSILE_TOP_LIMIT:
 	CMP R1, R0			; Checks if missile line has reached its maximum value
 	JNZ CHECK_MISSILE_LIMITS_END	; Ends routine if the last instruction is false
 	CALL erase_object		; Erases the missile from the screen
-	MOV R0, 0			
+	MOV R0, NO_VALUE			
 	MOV [R8], R0			; Changes in memory the missile line and column to 0
 
 CHECK_MISSILE_LIMITS_END:
@@ -716,7 +723,7 @@ create_met:
 	PUSH R3 
 	
 	MOV R2, [END_GAME_FLAG]
-	CMP R2, 1
+	CMP R2, FLAG_ON
 	JZ CREATE_MET_END		; Ends routine if END_GAME_FLAG is activated
 	
 CHECK_MET_TIMER:
@@ -724,10 +731,12 @@ CHECK_MET_TIMER:
 	MOV R2, MET_TIMER
 	CMP R3, R2			; Checks if spawn_timer has reached its maximum value
 	JLT CREATE_MET_END		; Jumps to end of routine if last instruction is false
+	
 	MOV R3, 0			; Stores the new value of MET_SPAWN_TIMER
 	MOV R0, [METEOR_NUMBER]		; Stores METEOR_NUMBER in R0
-	CMP R0, 4			; Checks if the maximum number of meteors was achieved
+	CMP R0, MAXIMUM_METEOR_NUMBER		; Checks if the maximum number of meteors was achieved
 	JZ CREATE_MET_END		; Ends routine if previous instruction is true
+	
 	CALL store_build_meteor		; Stores and creates a meteor
 	MOV R2, 0			
 	MOV [SELECT_SCREEN], R2		; Selects screen number 0 (contains ship and missile)
@@ -761,7 +770,7 @@ store_build_meteor:
 
 FIND_SPACE:
 	CALL placement			; Stores meteor reference position (Line in R1 and Column in R2) 
-	CMP R2, 0			; Checks if there is no meteor in this position (meteor will never be in collumn 0)
+	CMP R2, NO_VALUE		; Checks if there is no meteor in this position (meteor will never be in collumn 0)
 	JZ BUILD_METEOR			; If there is a free space it will build a meteor there
 	CALL select_meteor		; Selects next meteor from the METEOR_TABLE and next pixel screen 
 	JMP FIND_SPACE			; Repeats cycle until it finds a free meteor space
@@ -771,10 +780,10 @@ BUILD_METEOR:
 	MOV R1, METEOR_LINE		; Stores initial meteor position line in R1
 	CALL random_met_place		; Creates a random spawning column for the meteor
 	MOV R3, R1			; Stores METEOR_LINE in R3
-	SHL R3, 8			; Stores meteor line in upper byte
+	SHL R3, BYTE_VALUE		; Stores meteor line in upper byte
 	OR R3, R2			; Obtains meteor reference position by adding meteor column to R3
 	MOV [R8], R3			; Stores in memory the meteor reference position
-	ADD R8, 2 			; Advances one word in the meteor_table to obtain meteor_layout 
+	ADD R8, WORD_VALUE 		; Advances one word in the meteor_table to obtain meteor_layout 
 	CALL random_met_type		; Chooses the random meteor type (GOOD_METEOR or BAD_METEOR)
 	MOV [R8], R9			; Stores in memory the meteor evolution table address
 	MOV R9, [R9]			; Obtains the meteor layout
@@ -807,7 +816,7 @@ random_met_place:
 	
 GENERATE_RANDOM_COL:
 	MOVB R0, [R3]			; Reads from keypad columns
-	SHR R0, 5			; Obtains the random value in bits 7 to 4 placing it in bits 2 to 0
+	SHR R0, GET_RANDOM_NUMBER	; Obtains the random value in bits 7 to 4 placing it in bits 2 to 0
 	MOV R4, KEY_MASK
 	AND R0, R4			; Isolates lower nibble
 	MOV R2, R0			; Stores random column value (between 0 and 7)
@@ -844,7 +853,7 @@ random_met_type:
 
 GENERATE_RANDOM_NUM:
 	MOVB R0, [R3]			; Reads from keypad columns
-	SHR R0, 5			; Obtains the random value in bits 7 to 4 placing it in bits 2 to 0
+	SHR R0, GET_RANDOM_NUMBER	; Obtains the random value in bits 7 to 4 placing it in bits 2 to 0
 	MOV R4, KEY_MASK
 	AND R0, R4			; Isolates lower nibble
 
@@ -878,9 +887,9 @@ move_meteors:
 	PUSH R8 
 	PUSH R9
 	
-	MOV R3, 0
+	MOV R3, 0				; Stores de R3 with the value 0
 	MOV R1, [END_GAME_FLAG]
-	CMP R1, 1
+	CMP R1, FLAG_ON
 	JZ MOVE_MET_END				; Ends routine if END_GAME_FLAG is activated
 	
 	MOV R8, METEOR_TABLE
@@ -888,23 +897,25 @@ move_meteors:
 	
 ALLOW_METEOR_MOVEMENT:
 	MOV R1, [METEOR_INTERRUPTION_FLAG]
-	CMP R1, 1				; Checks if there is METEOR_INTERRUPTION_FLAG value is 1
+	CMP R1, FLAG_ON				; Checks if there is METEOR_INTERRUPTION_FLAG value is 1
 	JNZ MOVE_MET_END			; Ends routine if last instruction is false
+	
 	CALL clean_explosions			; Clean all explosions from screen number 5
 	MOV [METEOR_INTERRUPTION_FLAG], R3	; Resets METEOR_INTERRUPTION_FLAG to 0
 	CMP R6, 0
 	JZ MOVE_MET_END				; Ends routine if the number of meteors is 0
+	
 	MOV R1, 1				
 	MOV [SELECT_SCREEN], R1			; Selects first meteor screen
 
 GET_METEOR:
 	CALL placement				; Stores meteor reference position (Line in R1 and Column in R2) 
-	CMP R2, 0				; Checks if there is no meteor in this position ( meteor will never be in column 0)
+	CMP R2, NO_VALUE			; Checks if there is no meteor in this position (meteor will never be in column 0)
 	JZ GET_NEXT_METEOR			; Jumps if there is no meteor in this position
 	CALL move_meteor			; Moves meteor
 	
 	MOV R1, [END_GAME_FLAG]
-	CMP R1, 1
+	CMP R1, FLAG_ON
 	JZ MOVE_MET_END				; Ends routine if END_GAME_FLAG is activated
 	
 	SUB R6, 1				; Subtracts 1 from the number of meteors
@@ -934,15 +945,10 @@ MOVE_MET_END:
 
 clean_explosions:
 	PUSH R0
-	PUSH R1
-	MOV R1, [MISSILE_INTERRUPTION_FLAG]
-	CMP R1, 0
-	JZ CLEAN_EXPLOSION_END
 	MOV R0, 5
-	MOV [6000H], R0
+	MOV [DEL_SCREEN], R0		; Deletes all pixels from screen number 5 (deletes the explosions)
 	
 CLEAN_EXPLOSION_END:
-	POP R1
 	POP R0
 	RET 	
 	
@@ -977,17 +983,17 @@ CHECK_LAYOUT:
 COLLISION_HAPPENED:
 	CALL check_missile_collision	; Checks a missile-meteor collision
 	MOV R6, [EXISTS_COLLISION]
-	CMP R6, 1
+	CMP R6, FLAG_ON
 	JZ MOVE_METEOR_END		; Ends routine if a collision has happened
 	
 	CALL check_ship_collision	; Checks a ship-meteor collision
 	MOV R6, [EXISTS_COLLISION]
-	CMP R6, 1
-
+	CMP R6, FLAG_ON
+	JZ MOVE_METEOR_END
 	CALL check_meteor_limits	; Eliminates de meteor if it has reached its maximum line
 
 MOVE_METEOR_END:			; Ends routine
-	MOV R6, 0
+	MOV R6, NO_VALUE
 	MOV [EXISTS_COLLISION], R6	; Resets EXISTS_COLLISION to 0
 	POP R9
 	POP R8
@@ -1026,7 +1032,7 @@ check_ship_collision:
 
 DETECT_SHIP_COLLISION:
 	MOV R6, [EXISTS_COLLISION]
-	CMP R6, 1
+	CMP R6, FLAG_ON
 	JNZ CHECK_SHIP_COLLISION_END		; Ends routine if there was no collision
 	CALL treat_ship_meteor_collisions	; Takes care of a ship-meteor collision
 	
@@ -1059,10 +1065,6 @@ check_missile_collision:
 	PUSH R8
 	PUSH R9
 	
-	MOV R6, [EXISTS_COLLISION]
-	CMP R6, 1
-	JZ DETECT_MISSILE_COLLISION_END		; Ends routine if a ship has collided with
-	
 	MOV R1, [R8]				; Stores METEOR_TABLE in R1
 	CALL obtain_reference_points		; Obtains LEFT_DOWN position in R1 and RIGHT_UP position in R2
 	MOV [LEFT_DOWN_POSITION], R1		; Stores meteor LEFT_DOWN position in memory
@@ -1074,7 +1076,7 @@ check_missile_collision:
 
 DETECT_MISSILE_COLLISION:
 	MOV R6, [EXISTS_COLLISION]
-	CMP R6, 1
+	CMP R6, FLAG_ON
 	JNZ DETECT_MISSILE_COLLISION_END	; Ends routine if there was no collision
 	CALL treat_missile_meteor_collisions	; Takes care of a missile-meteor collision
 
@@ -1108,7 +1110,7 @@ treat_ship_meteor_collisions:
 TREAT_SHIP_BAD_COLLISION:
 	CMP R1, BAD_COLLISION
 	JNZ TREAT_SHIP_GOOD_COLLISIONS		; Jumps if COLLISION_TYPE is not BAD_COLLISION
-	MOV R6, 1
+	MOV R6, FLAG_ON
 	MOV [END_GAME_FLAG], R6			; Activates the END_GAME_FLAG
 	JMP TREAT_SHIP_METEOR_COLLISIONS_END	; Jumps to end routine
 
@@ -1241,7 +1243,7 @@ eliminate_missile:
 	MOV R9, DEF_MISSILE
 	CALL placement			; Stores missile position line in R1 and column in R2
 	CALL erase_object		; Erases missile from screen
-	MOV R1, 0			
+	MOV R1, NO_VALUE			
 	MOV [R8], R1			; Sets missile position to 0
 	MOV [SELECT_SCREEN], R0		; Restores previous selected screen
 	
@@ -1272,7 +1274,7 @@ check_collisions:
 	PUSH R6
 	
 	MOV R1, [R7]			; Stores object position in R1
-	CMP R1, 0			; MUDARRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+	CMP R1, NO_VALUE		; Checks if object exists
 	JZ CHECK_COLLISIONS_END		
 	CALL obtain_reference_points	; Stores LEFT_DOWN in R1 and UP_DOWN in R2 (Object lower left and upper right corners position)
 	MOV R3, [LEFT_DOWN_POSITION]	; Stores meteor LEFT_DOWN point in R3
@@ -1300,7 +1302,7 @@ CHECK_RIGHT_SIDE:
 	AND R1, R0			; Applies lower byte mask to obtain object left column
 	CMP R4, R1			
 	JLT CHECK_COLLISIONS_END 	; Ends routine if the meteor right column is further to the left than the object's left column
-	MOV R0, 1
+	MOV R0, FLAG_ON
 	MOV [EXISTS_COLLISION], R0	; Activates EXISTS_COLLISION (collision flag)
 
 CHECK_COLLISIONS_END:
@@ -1396,14 +1398,12 @@ eliminate_meteor:
 	PUSH R2
 	PUSH R8
 	
-	MOV R0, 0
+	MOV R0, NO_VALUE
 	CALL erase_object		; Eliminates meteor from the screen
-	MOV [R8], R0			; Resets reference position of meteor
-	ADD R8 , WORD_VALUE		; Stores meteor evolution table address
-	MOV [R8], R0			; Resets the meteor evolution table to 0
-	ADD R8, WORD_VALUE		; Stores steps value adress
+	MOV [R8], R0			; Resets reference position of meteor to 0
+	MOV [R8+WORD_VALUE], R0		; Resets the meteor evolution table to 0
 	MOV R0, 1			
-	MOV [R8], R0			; Resets number of steps to 1
+	MOV [R8+OBTAIN_STEPS], R0	; Resets number of steps to 1
 	MOV R2, [METEOR_NUMBER]
 	SUB R2, 1			; Subtracts 1 from the number of active meteors
 	MOV [METEOR_NUMBER], R2		; Stores new value of active meteors 
@@ -1421,7 +1421,6 @@ eliminate_meteor:
 ; Determines the meteor layout according to the steps it has taken
 ;
 ; INPUT: 	R8 - METEOR_TABLE
-; OUTPUT:	R9 - 
 ;********************************************************************************************************
 
 select_layout:
@@ -1430,6 +1429,7 @@ select_layout:
 	PUSH R2
 	PUSH R6
 	PUSH R8
+	PUSH R9
 	MOV R6, R8			; Stores METEOR_TABLE in R6
 	ADD R8, OBTAIN_STEPS		; Stores in R8 the steps adress
 	ADD R6, WORD_VALUE		; Stores METEOR_TABLE adress that contains meteor evolution table in R6
@@ -1454,6 +1454,7 @@ ADD_STEPS:
 	MOV [R8], R0			; Stores te number of steps in the METEOR_TABLE
 	
 SELECT_LAYOUT_END:
+	POP R9
 	POP R8
 	POP R6
 	POP R2
@@ -1473,7 +1474,7 @@ SELECT_LAYOUT_END:
 
 select_meteor:
 	PUSH R0
-	MOV R0, 6
+	MOV R0, NEXT_METEOR_VALUE
 	ADD R8, R0			; Adds 6 to R8 (METEOR_TABLE), to obtain next meteor
 	MOV R0, [SELECT_SCREEN]		; Stores number of selected screen in R0
 	ADD R0, 1		
@@ -1491,10 +1492,10 @@ select_meteor:
 display_clock_decrease:
 	PUSH R1	
 	MOV R1, [ENERGY_INTERRUPTION_FLAG]
-	CMP R1, 1				; Checks if ENERGY_INTERRUPTION_FLAG is activated
+	CMP R1, FLAG_ON				; Checks if ENERGY_INTERRUPTION_FLAG is activated
 	JNZ DISPLAY_CLOCK_DECREASE_END		; Ends routine if the flag isn't activated
 	CALL display_decrease			; Decreases display value by 5
-	MOV R1, 0		
+	MOV R1, FLAG_OFF		
 	MOV [ENERGY_INTERRUPTION_FLAG], R1 	; Deactivates ENERGY_INTERRUPTION_FLAG
 
 DISPLAY_CLOCK_DECREASE_END:	
@@ -1559,9 +1560,9 @@ CHANGE_DISPLAY:
 	CALL test_display_limits	; Checks if the energy has reached display limits (100 upper, 0 lower)
 	MOV [DISPLAY_VALUE], R1		; Stores in memory value of display (R1)
 	CALL convert_hex_to_dec		; Converts hexadecimal value of display to decimal (and stores it in R1)
-	CMP R1, 0
+	CMP R1, LOWER_BOUND
 	JNZ DISPLAY_END			; Ends routine if the lower limit hasn't been reached (ship has energy)
-	MOV R0, 1
+	MOV R0, FLAG_ON
 	MOV [END_GAME_FLAG], R0		; Activates END_GAME_FLAG to end the game later (ship has run out of energy)
 	
 DISPLAY_END:
@@ -1633,7 +1634,7 @@ convert_hex_to_dec:
 	JMP CONVERT_HEX_TO_DEC_END
 
 UPPER_BOUND_REACHED:
-	MOV R1, 0100H			; Treats the specific case of the input being 64H (Stores "decimal" value 100)
+	MOV R1, INITIAL_DISPLAY_VALUE	; Treats the specific case of the input being 64H (Stores "decimal" value 100)
 
 CONVERT_HEX_TO_DEC_END:
 	POP  R3
@@ -1660,7 +1661,7 @@ TEST_LEFT:
 	MOV R3, MIN_COLUMN		; Stores the minimium screen column 
 	CMP R3, R2			; Checks if obejct has reached MIN_COLUMN
 	JNZ TEST_END			; Ends routine if it hasn't
-	MOV R3, 0			
+	MOV R3, NO_VALUE			
 	MOV [R1], R3			; Changes CHANGE_COL to 0 (ship won't move left)
 
 TEST_RIGHT:
@@ -1668,7 +1669,7 @@ TEST_RIGHT:
 	ADD R2, 4			; Width is 4, so the last pixel is 4 pixels away from position reference
 	CMP R3, R2			; Checks if obejct has reached MAX_COLUMN
 	JNZ TEST_END			; Ends routine if it hasn't
-	MOV R3, 0
+	MOV R3, NO_VALUE
 	MOV [R1], R3			; Changes CHANGE_COL to 0 (ship won't move right)
 
 TEST_END:				; Restores stack values in the registers
@@ -1743,9 +1744,9 @@ write_object:
 	PUSH R3
 	PUSH R9				; Stores object layout table (R9) in stack
 	MOV R0, [R9]			; Stores object height
-	ADD R9, 2			; Adds 2 to get object width
+	ADD R9, WORD_VALUE		; Adds 2 to get object width
 	MOV R3, [R9]			; Stores object width
-	ADD R9, 2			; Gets first pixel colour to use
+	ADD R9, WORD_VALUE		; Gets first pixel colour to use
 
 WRITE_LINES:				; Writes a line of pixels
 	CALL write_line			; Writes the line of pixels that refer to the value of R1
@@ -1781,7 +1782,7 @@ WRITE_PIXELS_LINE:
 	MOV R5, [R9]			; Stores pixel colour in R5
 	CALL pick_colour		; Changes colour to 0 if ERASER mode is activated
 	CALL write_pixel		; Writes pixel
-	ADD R9, 2			; Gets next colour (R9 is object layout)
+	ADD R9, WORD_VALUE		; Gets next colour (R9 is object layout)
     	ADD R2, 1          	    	; Gets next column
     	SUB R3, 1			; Decreases number of remaining columns to write (-1)
    	JNZ WRITE_PIXELS_LINE      	; Repeats until all width of the object is written (until R3 is 0)
@@ -1954,7 +1955,7 @@ delay:
 	JNZ DEACTIVATE_FLAG
 
 RESET:
-	MOV R2, 0			; Sets counter back to 0
+	MOV R2, NO_VALUE		; Sets counter back to 0
 
 ACTIVATE_FLAG:				; Activates flag so the object can move
 	MOV R3, 1			
@@ -1962,7 +1963,7 @@ ACTIVATE_FLAG:				; Activates flag so the object can move
 	JMP END_DELAY
 
 DEACTIVATE_FLAG:			; Deactivates flag to prevent object from moving
-	MOV R3, 0
+	MOV R3, FLAG_OFF
 	MOV [DELAY_FLAG], R3
 	
 END_DELAY:			
@@ -2000,8 +2001,8 @@ end_game_menu:
 	PUSH R1
 	PUSH R2
 	MOV R2, 3
-	MOV [6068H], R2			; Stops all videos and sounds playing
-	MOV [DEL_SCREEN], R2		; Deletes all pixels from all the screens
+	MOV [END_ALL_SOUND_VIDEO], R2	; Stops all videos and sounds playing
+	MOV [DEL_ALL_SCREENS], R2	; Deletes all pixels from all the screens
 	MOV [START_SOUND_VIDEO], R2	; Plays end_game video 
 	
 END_GAME_CYCLE:
@@ -2032,7 +2033,7 @@ reset_game:
 	PUSH R1
 	MOV R0, LINE			; Stores ship initial position reference line
 	MOV R1, COLUMN			; Stores ship initial position reference column
-	SHL R0, 8			; Shifts ship line one byte to the left
+	SHL R0, BYTE_VALUE		; Shifts ship line one byte to the left
 	OR R0, R1			; Adds to R0 the ship column
 	MOV [SHIP_PLACE], R0		; Stores in memory the initial position of the ship 
 	CALL reset_meteor_table 	; Resets all meteor table values
@@ -2062,8 +2063,8 @@ reset_meteor_table:
 
 CLEAN_TABLE:
 	MOV [R8], R0			; Resets meteor position to 0
-	MOV [R8+2H], R0			; Resets meteor layout address to 0
-	MOV [R8+4H], R2			; Resets meteor steps to 1
+	MOV [R8+WORD_VALUE], R0		; Resets meteor layout address to 0
+	MOV [R8+OBTAIN_STEPS], R2	; Resets meteor steps to 1
 	ADD R8, NEXT_METEOR_VALUE	; Stores in R8 the next meteor position
 	SUB R1, 1			; Subtracts number of meteors by 1
 	JNZ CLEAN_TABLE			; Repeats cycle if the number of meteors is not 0
@@ -2085,7 +2086,7 @@ RESET_METEOR_TABLE_END:
 
 reset_flags:
 	PUSH R0
-	MOV R0, 0
+	MOV R0, FLAG_OFF
 	MOV [DELAY_COUNTER], R0
 	MOV [DELAY_FLAG], R0
 	MOV [EXISTS_COLLISION], R0
@@ -2102,21 +2103,21 @@ reset_flags:
 
 meteor_interruption:
 	PUSH R0
-	MOV R0, 1
+	MOV R0, FLAG_ON
 	MOV [METEOR_INTERRUPTION_FLAG], R0	; Activates meteor interruption flag
 	POP R0
 	RFE 
 	
 missile_interruption:
 	PUSH R0
-	MOV R0, 1
+	MOV R0, FLAG_ON
 	MOV [MISSILE_INTERRUPTION_FLAG], R0	; Activates missile interruption flag
 	POP R0
 	RFE 
 
 energy_interruption:
 	PUSH R0
-	MOV R0, 1
+	MOV R0, FLAG_ON
 	MOV [ENERGY_INTERRUPTION_FLAG], R0	; Activates energy interruption flag
 	POP R0
 	RFE

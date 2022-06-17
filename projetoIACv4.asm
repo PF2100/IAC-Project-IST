@@ -1157,8 +1157,9 @@ DETERMINE_BAD_GOOD_COLLISION_END:
 	
 	
 ;********************************************************************************************************
-;* explode_meteor
+;* explode_meteor:
 ;
+; 
 ;********************************************************************************************************	
 
 explode_meteor:
@@ -1187,8 +1188,9 @@ explode_meteor:
 	
 		
 ;********************************************************************************************************
-;* eliminate_missile
+;* eliminate_missile:
 ;
+; Resets missile position to 0 and erases it from the screen
 ;*******************************************************************************************************
 
 eliminate_missile:
@@ -1198,18 +1200,16 @@ eliminate_missile:
 	PUSH R8
 	PUSH R9
 	
-	MOV R0, [SELECT_SCREEN]
+	MOV R0, [SELECT_SCREEN]		; Stores current selected screen
 	MOV R1, 0
-	MOV [SELECT_SCREEN], R1
-	
+	MOV [SELECT_SCREEN], R1		; Selects screen number 0 (used to ship and missiles)
 	MOV R8, MISSILE_PLACE
 	MOV R9, DEF_MISSILE
-	CALL placement
-	CALL erase_object
-	
+	CALL placement			; Stores missile position line in R1 and column in R2
+	CALL erase_object		; Erases missile from screen
 	MOV R1, 0			
-	MOV [R8], R1
-	MOV [SELECT_SCREEN], R0
+	MOV [R8], R1			; Sets missile position to 0
+	MOV [SELECT_SCREEN], R0		; Restores previous selected screen
 	
 	POP R9
 	POP R8

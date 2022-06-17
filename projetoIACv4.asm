@@ -1319,7 +1319,7 @@ CHECK_COLLISIONS_END:
 ;
 ; Obtains the object position reference points:
 ; Lower left corner (LEFT_DOWN) and the upper right corner (RIGHT_UP)
-:
+;
 ; INPUT:	R1 - Object position reference (upper left corner)
 ;		R9 - Object layout adress (heigth, width and colours)
 ; OUPUT:	R1 - LEFT_DOWN point

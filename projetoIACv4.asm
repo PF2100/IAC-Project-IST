@@ -12,33 +12,32 @@
 WORD_VALUE		EQU 02H
 LOWER_BYTE_MASK		EQU 00FFH
 BYTE_VALUE		EQU 8
-
-INJECTED_LINE 		EQU BYTE_VALUE		; Initial keypad line (fourth)
-KEY_LIN 		EQU 0C000H		; Keyboard Rows
-KEY_COL 		EQU 0E000H		; Keyboard Columns
-KEY_MASK		EQU 0FH			; Isolates the lower nibble from the output of the keypad
-NO_BUTTON		EQU 0FFFFH		; Value of no pressed button
+INJECTED_LINE 		EQU BYTE_VALUE	; Initial keypad line (fourth)
+KEY_LIN 		EQU 0C000H	; Keyboard Rows
+KEY_COL 		EQU 0E000H	; Keyboard Columns
+KEY_MASK		EQU 0FH		; Isolates the lower nibble from the output of the keypad
+NO_BUTTON		EQU 0FFFFH	; Value of no pressed button
 
 
 ;****DISPLAY****************************************************************************
 
-DISPLAY			EQU 0A000H		; Display adress
-UPPER_BOUND		EQU 0064H		; Display upper bound (energy)
-LOWER_BOUND		EQU 0000H		; Display lower bound (energy)
-DISPLAY_TIMER 		EQU 0100H		; Display delay between pressing button and changing energy value
-HEXTODEC_CONST		EQU 000AH		; Display hexadecimal to decimal constant
-DISPLAY_DECREASE	EQU -5			; Display decrease value 
-DISPLAY_INCREASE	EQU 15
+DISPLAY			EQU 0A000H	; Display adress
+UPPER_BOUND		EQU 0064H	; Display upper bound (energy)
+LOWER_BOUND		EQU 0000H	; Display lower bound (energy)
+DISPLAY_TIMER 		EQU 0100H	; Display delay between pressing button and changing energy value
+HEXTODEC_CONST		EQU 000AH	; Display hexadecimal to decimal constant
+DISPLAY_DECREASE	EQU -5		; Display decremente value 
+DISPLAY_INCREASE	EQU 15		; Display increment value 
 
 
 ;****KEYPAD COMMANDS*******************************************************************
 
-START			EQU 0CH			; Start game
-PAUSE			EQU 0DH			; Pause game
-END			EQU 0EH			; End game
-LEFT			EQU 00H			; Move ship left
-RIGHT			EQU 02H			; Move ship right
-SHOOT			EQU 01H			; Shoot missile
+START			EQU 0CH		; Start game
+PAUSE			EQU 0DH		; Pause game
+END			EQU 0EH		; End game
+LEFT			EQU 00H		; Move ship left
+RIGHT			EQU 02H		; Move ship right
+SHOOT			EQU 01H		; Shoot missile
 
 
 ;***MEDIA CENTER COMMANDS**************************************************************
@@ -55,14 +54,11 @@ SELECT_SCREEN		EQU 6004H	; Select pixel screen
 SHOW_SCREEN		EQU 6006H	;
 HIDE_SCREEN		EQU 6008H	;
 
-
 PLAY_SOUND_VIDEO	EQU 605AH	;
 START_SOUND_VIDEO	EQU 605CH	;
 PAUSE_SOUND_VIDEO	EQU 605EH	;
 RESUME_SOUND_VIDEO	EQU 6060H
 END_SOUND_VIDEO		EQU 6066H
-
-
 
 
 ;***SCREEN*******************************************************************************************
@@ -546,7 +542,6 @@ MOVE:
 	ADD R8, 1			; Adds 1 to SHIP_PLACE to obtain the column address
 	MOVB [R8], R2			; Changes column position of the ship
 	CALL draw_object		; Draws object in new position
-	CALL ship_checks_collision
 
 SHIP_END:				; Restores stack values in the registers
 	POP R10
@@ -555,53 +550,7 @@ SHIP_END:				; Restores stack values in the registers
 	POP R7
 	POP R0
 	RET
-	
-	
-;********************************************************************************************************
-;*ship_checks_collision
-; 
-;
-;********************************************************************************************************
-
-ship_checks_collision:
-	PUSH R0
-	PUSH R1
-	PUSH R2
-	PUSH R6
-	PUSH R8
-	MOV R1, 1				
-	MOV [SELECT_SCREEN], R1		; Selects first meteor screen
-	
-	MOV R8,METEOR_TABLE
-	MOV R6, [METEOR_NUMBER]
-
-OBTAIN_METEOR:
-	CALL placement			; Stores meteor reference position (Line in R1 and Column in R2) 
-	CMP R2, 0			; Checks if there is no meteor in this position ( meteor will never be in collumn 0)
-	JZ OBTAIN_NEXT_METEOR		; Jumps if there is no meteor in this position
-	CALL check_ship_collision	; Moves Meteor in this position	
-	
-	MOV R1,[END_GAME_FLAG]
-	CMP R1,1
-	JZ SHIP_CHECKS_COLLISION_END
-	
-	SUB R6, 1			; Subtracts 1 from the number of meteors
-	JZ SHIP_CHECKS_COLLISION_END	; Ends routine if there are no more meteors to take care of
-	
-OBTAIN_NEXT_METEOR:
-	CALL select_meteor		; Selects next meteor from the METEOR_TABLE
-	JMP OBTAIN_METEOR		; Repeats GET_METEOR cycle until all meteors are checked
-	
-SHIP_CHECKS_COLLISION_END:
-	MOV R1, 0
-	MOV [SELECT_SCREEN], R1
-	POP R8
-	POP R6
-	POP R2
-	POP R1
-	POP R0
-	RET
-	
+		
 
 ;********************************************************************************************************
 ;*mov_missile
@@ -1527,10 +1476,10 @@ DISPLAY_INCREASE_END:				; End of routine
 display_decrease:
 	PUSH R1	
 	MOV R1, DISPLAY_DECREASE		
-	MOV [DISPLAY_VARIATION], R1		; Changes DISPLAY_VARIATION value to DISPLAY_DECREASE
-	CALL mov_display			; Changes the value that the display shows
+	MOV [DISPLAY_VARIATION], R1	; Changes DISPLAY_VARIATION value to DISPLAY_DECREASE
+	CALL mov_display		; Changes the value that the display shows
 
-DISPLAY_DECREASE_END:				; End of routine
+DISPLAY_DECREASE_END:			; End of routine
 	POP R1
 	RET
 		
@@ -1610,18 +1559,18 @@ TEST_DISPLAY_LIMITS_END:
 ; OUTPUT: R1 - Decimal value of Display
 ;***********************************************************************************************************************
 
-convert_hex_to_dec: 				; converto numeros hexadecimais (até 63H) para decimal
-	PUSH R2					; converte o numero em R1, e deixa-o em R1
+convert_hex_to_dec: 			; converto numeros hexadecimais (até 63H) para decimal
+	PUSH R2				; converte o numero em R1, e deixa-o em R1
 	PUSH R3
 	MOV  R3, UPPER_BOUND
 	CMP R1, R3
 	JZ UPPER_BOUND_REACHED
 	MOV  R3, HEXTODEC_CONST
-	MOV  R2, R1				; Saves the display value in R2
-	DIV  R1, R3 				; Stores the tens digit of the display value in R1
-	MOD  R2, R3 				; Stores the units digit of the display value in R2
-	SHL  R1, 4				; Moves the tens value of the display value to the next hexadecimal digit
-	ADD  R1, R2				; Adds the units digit to R1
+	MOV  R2, R1			; Saves the display value in R2
+	DIV  R1, R3 			; Stores the tens digit of the display value in R1
+	MOD  R2, R3 			; Stores the units digit of the display value in R2
+	SHL  R1, 4			; Moves the tens value of the display value to the next hexadecimal digit
+	ADD  R1, R2			; Adds the units digit to R1
 	JMP CONVERT_HEX_TO_DEC_END
 
 UPPER_BOUND_REACHED:
@@ -2040,6 +1989,7 @@ reset_game:
 ;*reset_meteor_table: 
 ;
 ;*****************************************************************************************
+
 reset_meteor_table:
 	PUSH R0
 	PUSH R1
@@ -2107,4 +2057,4 @@ energy_interruption:
 	MOV R0, 1
 	MOV [ENERGY_INTERRUPTION_FLAG], R0	; Activates energy interruption flag
 	POP R0
-	RFE 
+	RFE

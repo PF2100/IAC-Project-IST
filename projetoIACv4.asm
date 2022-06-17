@@ -27,7 +27,8 @@ LOWER_BOUND		EQU 0000H	; Display lower bound (energy)
 DISPLAY_TIMER 		EQU 0100H	; Display delay between pressing button and changing energy value
 HEXTODEC_CONST		EQU 000AH	; Display hexadecimal to decimal constant
 DISPLAY_DECREASE	EQU -5		; Display decremente value 
-DISPLAY_INCREASE	EQU 15		; Display increment value 
+BAD_COLLISION_INCREASE	EQU 10
+GOOD_COLLISION_INCREASE EQU 15
 
 
 ;****KEYPAD COMMANDS*******************************************************************
@@ -168,7 +169,6 @@ DEF_METEOR_MEDIUM:
 	WORD 5, 5
 	WORD 0, OUTERBLUE, LIGHTERBLUE, LIGHTERBLUE, LIGHTERBLUE, 0, LIGHTERBLUE, GRAY, GRAY, LIGHTERBLUE, OUTERBLUE, LIGHTERBLUE,
 		DARK, DARKGRAY, OUTERBLUE, 0, OUTERBLUE, LIGHTERBLUE, OUTERBLUE, LIGHTERBLUE, LIGHTERBLUE, 0, 0, LIGHTERBLUE, 0, 0 
-	
 
 DEF_METEOR_MAX:
 	WORD 6, 6
@@ -176,23 +176,21 @@ DEF_METEOR_MAX:
 		OUTERBLUE, GRAY, DARK, LIGHT, DARKGRAY, OUTERBLUE, LIGHTERBLUE, GRAY, LIGHTGRAY, LIGHTGRAY, GRAY, LIGHTERBLUE,
 		OUTERBLUE, OUTERBLUE, LIGHTGRAY, DARKGRAY, LIGHTERBLUE, 0, 0, OUTERBLUE, LIGHTERBLUE, OUTERBLUE, 0, 0
 	
-
 DEF_ENERGY_BOLT_SMALL:
 	WORD 4, 4
 	WORD 0, 0, 0, DARKYELLOW, 0, YELLOW, YELLOW, 0, 0, YELLOW, YELLOW, 0, DARKYELLOW, 0, 0, 0
 
 DEF_ENERGY_BOLT_MEDIUM:
-	WORD 5, 5
-	WORD 0, 0, 0, ORANGE, 0, 0, 0, YELLOW, 0, 0, 0, YELLOW, YELLOW, YELLOW, 0, 0, 0, YELLOW, 0, 0, 0, ORANGE, 0, 0, 0 
+	WORD 5, 3
+	WORD 0, 0, ORANGE, 0, YELLOW, 0, YELLOW, YELLOW, YELLOW, 0, YELLOW, 0, ORANGE, 0, 0 
 
 DEF_ENERGY_BOLT_MAX:
-	WORD 6, 6
-	WORD 0, 0, 0, DARKYELLOW, 0, 0, 0, 0, ORANGE, 0, 0, 0, 0, YELLOW, YELLOW, YELLOW, 0, 0, 0, 0, 0, ORANGE, 0, 0, 0, 0,
-		ORANGE, 0, 0, 0, 0, DARKYELLOW, 0, 0, 0, 0
+	WORD 6, 3
+	WORD 0, 0,DARKYELLOW, 0, ORANGE, 0, YELLOW, YELLOW, YELLOW, 0, 0, ORANGE, 0,	ORANGE, 0, DARKYELLOW, 0, 0
 
 DEF_MISSILE:
 	WORD MISSILE_HEIGHT, MISSILE_WIDTH
-	WORD RED
+	WORD LIGHTERBLUE
 	
 EXPLODE_METEOR:
 	WORD 6, 6
@@ -956,6 +954,9 @@ move_meteor:
 	MOV [CHANGE_LINE], R7		; Changes line variation value to 1
 
 CHECK_LAYOUT:
+	MOV R7, [R8+WORD_VALUE]		; Adds WORD value to obtain meteor evolution table address
+	MOV R9, [R7]
+	CALL erase_object
 	CALL select_layout		; Selects meteor layout based on steps it took	;
 	MOV R7, [R8+WORD_VALUE]		; Adds WORD value to obtain meteor evolution table address
 	MOV R9, [R7]			; Stores meteor layout in R9
@@ -1454,13 +1455,19 @@ DISPLAY_CLOCK_DECREASE_END:			; End of routine
 ;***********************************************************************************************************************
 
 display_increase:
-	PUSH R1	
-	MOV R1, DISPLAY_INCREASE		
-	MOV [DISPLAY_VARIATION], R1		; Changes DISPLAY_VARIATION value to DISPLAY_INCREASE
-	CALL mov_display			; Changes the value that the display shows
+	PUSH R0
+	PUSH R1
+	MOV R0, GOOD_COLLISION_INCREASE
+	MOV R1, [COLLISION_TYPE]
+	CMP R1, GOOD_COLLISION
+	JZ DISPLAY_INCREASE_END
+	MOV R0, BAD_COLLISION_INCREASE
 
 DISPLAY_INCREASE_END:				; End of routine
+	MOV [DISPLAY_VARIATION], R0
+	CALL mov_display
 	POP R1
+	POP R0
 	RET
 	
 

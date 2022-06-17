@@ -1,7 +1,7 @@
 
 ;********************************************************************************************************
 ;* SPACE INVADERS
-; IAC PROJECT - INTERMEDIATE VERSION
+; IAC PROJECT - FINAL VERSION
 ;
 ; GROUP 13: João Trocado (103333), Pedro Freitas (103168), Tiago Firmino (103590)
 ;********************************************************************************************************
@@ -1411,16 +1411,18 @@ SELECT_LAYOUT_END:
 
 
 ;********************************************************************************************************
-;* select_meteor
-; Selects new meteor from the METEOR_TABLE anges the selected screen to which the meteor should be at
+;* select_meteor:
 ;
-; INPUT: R8 - meteor address in METEOR_TABLE
+; Selects new meteor from the METEOR_TABLE and changes the selected screen where the meteor should be
+;
+; INPUT: 	R8 - Meteor address in METEOR_TABLE
+; OUTPUT: 	R8 - Next meteor adress in METEOR_TABLE
 ;********************************************************************************************************
 
 select_meteor:
 	PUSH R0
 	MOV R0, 6
-	ADD R8, R0			; Adds 6 to R8 ( METEOR_TABLE) , to obtain next meteor
+	ADD R8, R0			; Adds 6 to R8 (METEOR_TABLE), to obtain next meteor
 	MOV R0, [SELECT_SCREEN]		; Stores number of selected screen in R0
 	ADD R0, 1		
 	MOV [SELECT_SCREEN], R0		; Selects next screen
@@ -1429,21 +1431,21 @@ select_meteor:
 
 
 ;***********************************************************************************************************************
-;* display_decrease_clock:
+;* display_clock_decrease:
 ;
 ; Decreases the value that the display shows by DISPLAY_DECREASE (-5) according to the display clock
 ;***********************************************************************************************************************
 
 display_clock_decrease:
 	PUSH R1	
-	MOV R1, [ENERGY_INTERRUPTION_FLAG]	
-	CMP R1, 1				; Checks if ENERGY_INTERRUPTION_VALUE is 1
-	JNZ DISPLAY_CLOCK_DECREASE_END
-	CALL display_decrease			; 
+	MOV R1, [ENERGY_INTERRUPTION_FLAG]
+	CMP R1, 1				; Checks if ENERGY_INTERRUPTION_FLAG is activated
+	JNZ DISPLAY_CLOCK_DECREASE_END		; Ends routine if the flag isn't activated
+	CALL display_decrease			; Decreases display value by 5
 	MOV R1, 0		
-	MOV [ENERGY_INTERRUPTION_FLAG], R1 	; 
+	MOV [ENERGY_INTERRUPTION_FLAG], R1 	; Deactivates ENERGY_INTERRUPTION_FLAG
 
-DISPLAY_CLOCK_DECREASE_END:			; End of routine
+DISPLAY_CLOCK_DECREASE_END:	
 	POP R1
 	RET
 
@@ -1451,21 +1453,21 @@ DISPLAY_CLOCK_DECREASE_END:			; End of routine
 ;***********************************************************************************************************************
 ;* display_increase:
 ;
-; increases the value that the display shows by DISPLAY_INCREASE (5) 
+; Increases the value that the display shows by DISPLAY_INCREASE (10 or 15) 
 ;***********************************************************************************************************************
 
 display_increase:
 	PUSH R0
 	PUSH R1
-	MOV R0, GOOD_COLLISION_INCREASE
-	MOV R1, [COLLISION_TYPE]
+	MOV R0, GOOD_COLLISION_INCREASE		; Stores in R0, the display increase value of a good meteor (15)
+	MOV R1, [COLLISION_TYPE]		; Stores in R1 the type of the collision
 	CMP R1, GOOD_COLLISION
-	JZ DISPLAY_INCREASE_END
-	MOV R0, BAD_COLLISION_INCREASE
+	JZ DISPLAY_INCREASE_END			; Jumps to DISPLAY_INCREASE_END if the collision type was good
+	MOV R0, BAD_COLLISION_INCREASE		; Stores the display increase value of a bad meteor (10)
 
-DISPLAY_INCREASE_END:				; End of routine
-	MOV [DISPLAY_VARIATION], R0
-	CALL mov_display
+DISPLAY_INCREASE_END:
+	MOV [DISPLAY_VARIATION], R0		; Stores in memory the variation that was previously determined
+	CALL mov_display			; Changes display value
 	POP R1
 	POP R0
 	RET
@@ -1474,7 +1476,7 @@ DISPLAY_INCREASE_END:				; End of routine
 ;***********************************************************************************************************************
 ;* display_decrease:
 ;
-; decrease the value that the display shows by DISPLAY_DECREASE (-5) 
+; Decreases the value that the display shows by DISPLAY_DECREASE (-5) 
 ;***********************************************************************************************************************
 
 display_decrease:
@@ -1483,13 +1485,13 @@ display_decrease:
 	MOV [DISPLAY_VARIATION], R1	; Changes DISPLAY_VARIATION value to DISPLAY_DECREASE
 	CALL mov_display		; Changes the value that the display shows
 
-DISPLAY_DECREASE_END:			; End of routine
+DISPLAY_DECREASE_END:
 	POP R1
 	RET
 		
 
 ;***********************************************************************************************************************
-;* moves_display:
+;* mov_display:
 ;
 ; Uses DISPLAY_VARIATION value to change the value that display shows
 ;***********************************************************************************************************************
@@ -1503,12 +1505,12 @@ mov_display:
 	
 CHANGE_DISPLAY:
 	CALL test_display_limits	; Checks if the energy has reached display limits (100 upper, 0 lower)
-	MOV [DISPLAY_VALUE], R1		; Stores in memory value of display(R1)
-	CALL convert_hex_to_dec		; Converts hexadecimal value of display do decimal
+	MOV [DISPLAY_VALUE], R1		; Stores in memory value of display (R1)
+	CALL convert_hex_to_dec		; Converts hexadecimal value of display to decimal (and stores it in R1)
 	CMP R1, 0
-	JNZ DISPLAY_END			; 
+	JNZ DISPLAY_END			; Ends routine if the lower limit hasn't been reached (ship has energy)
 	MOV R0, 1
-	MOV [END_GAME_FLAG], R0
+	MOV [END_GAME_FLAG], R0		; Activates END_GAME_FLAG to end the game later (ship has run out of energy)
 	
 DISPLAY_END:
 	MOV [DISPLAY], R1		; Sets display to correspondant decimal value
@@ -1522,29 +1524,29 @@ DISPLAY_END:
 ;***********************************************************************************************************************************
 ;* test_display_limits:
 ;
-; Changes the display value to either 100 or 0 , if the addition of R7 to the display value surpasses the display limits
+; Changes the display value to either 100 or 0, if the addition of R7 to the display value exceeds the display limits
 ; INPUT:	R1 - Value that the display currently shows
 ;	 	R7 - Display variation
 ; OUTPUT:	R1 - New display value
 ;***********************************************************************************************************************************	
 
 test_display_limits:	
-	PUSH R0				;
-	CMP R7, DISPLAY_DECREASE	; 
-	JZ LOWER_LIMIT			; Jumps to LOWER_LIMIT check if Display variation value is DISPLAY_DECREASE
+	PUSH R0		
+	CMP R7, DISPLAY_DECREASE
+	JZ LOWER_LIMIT			; Jumps to LOWER_LIMIT if the display variation value is DISPLAY_DECREASE
 	
 UPPER_LIMIT:
 	MOV R0, UPPER_BOUND
 	MOV R1, [DISPLAY_VALUE]
-	ADD R1, R7			; Adds display variation (5) to R1 (DISPLAY_VALUE)
+	ADD R1, R7			; Adds display variation (10 or 15) to R1 (DISPLAY_VALUE)
 	CMP R1, R0
 	JLT TEST_DISPLAY_LIMITS_END	; Jumps if DISPLAY_VALUE is lower then upper limit (limit hasn't been reached)
 	MOV R1, R0			; Sets DISPLAY_VALUE to UPPER_BOUND (limit reached)
 	JMP TEST_DISPLAY_LIMITS_END	; Ends routine
 
 LOWER_LIMIT:
-	MOV R0, LOWER_BOUND		;
-	MOV R1, [DISPLAY_VALUE]		;
+	MOV R0, LOWER_BOUND	
+	MOV R1, [DISPLAY_VALUE]
 	ADD R1, R7			; Adds display variation (-5) to R1 (DISPLAY_VALUE)
 	CMP R1, R0			; 
 	JGT TEST_DISPLAY_LIMITS_END	; Jumps if DISPLAY_VALUE is greater then lower limit (limit hasn't been reached)
@@ -1558,18 +1560,19 @@ TEST_DISPLAY_LIMITS_END:
 ;***********************************************************************************************************************
 ;* convert_hex_to_dec:
 ;
-; Converts hexadecimal value to decimal value
-; INPUT: R1 - Hexadecimal value of DISPLAY
-; OUTPUT: R1 - Decimal value of Display
+; Converts hexadecimal values to decimal to show in display
+;
+; INPUT: 	R1 - Hexadecimal value of DISPLAY
+; OUTPUT: 	R1 - Decimal value of DISPLAY
 ;***********************************************************************************************************************
 
-convert_hex_to_dec: 			; converto numeros hexadecimais (até 63H) para decimal
-	PUSH R2				; converte o numero em R1, e deixa-o em R1
+convert_hex_to_dec:
+	PUSH R2
 	PUSH R3
-	MOV  R3, UPPER_BOUND
-	CMP R1, R3
-	JZ UPPER_BOUND_REACHED
-	MOV  R3, HEXTODEC_CONST
+	MOV  R3, UPPER_BOUND		; Stores the max display value (64H) in R3
+	CMP R1, R3			; Checks if hexadecimal value to be converted has reached UPPER_BOUND
+	JZ UPPER_BOUND_REACHED		; Jumps if previous condition is true
+	MOV  R3, HEXTODEC_CONST		; Stores the hexadecimal equivalent to 10 decimal in R3
 	MOV  R2, R1			; Saves the display value in R2
 	DIV  R1, R3 			; Stores the tens digit of the display value in R1
 	MOD  R2, R3 			; Stores the units digit of the display value in R2
@@ -1578,7 +1581,7 @@ convert_hex_to_dec: 			; converto numeros hexadecimais (até 63H) para decimal
 	JMP CONVERT_HEX_TO_DEC_END
 
 UPPER_BOUND_REACHED:
-	MOV R1, 0100H	
+	MOV R1, 0100H			; Treats the specific case of the input being 64H (Stores "decimal" value 100)
 
 CONVERT_HEX_TO_DEC_END:
 	POP  R3
@@ -1937,28 +1940,29 @@ same_button:
 ;*****************************************************************************************
 ;* end_game_menu
 ;
+; Enters game over cycle when the player loses the game or when the button END is pressed
 ;*****************************************************************************************	
 
 end_game_menu:
-	PUSH R0
+	PUSH R0	
 	PUSH R1
 	PUSH R2
 	MOV R2, 3
-	MOV [6068H], R2
-	MOV [DEL_SCREEN], R2
-	MOV [START_SOUND_VIDEO], R2
+	MOV [6068H], R2			; Stops all videos and sounds playing
+	MOV [DEL_SCREEN], R2		; Deletes all pixels from all the screens
+	MOV [START_SOUND_VIDEO], R2	; Plays end_game video 
 	
 END_GAME_CYCLE:
 	CALL keypad
 	MOV R1, [BUTTON]
 	MOV R0, START
-	CMP R1, R0
-	JNZ END_GAME_CYCLE
+	CMP R1, R0			; Checks if button pressed is START
+	JNZ END_GAME_CYCLE		; Leaves cycle if the previous condition is true
 	
 	
 END_GAME_RETURN:
-	CALL reset_game
-	CALL start_game
+	CALL reset_game			; Resets all values to original conditions
+	CALL start_game			; Starts new game
 	POP R2
 	POP R1
 	POP R0
@@ -1966,30 +1970,32 @@ END_GAME_RETURN:
 	
 	
 ;*****************************************************************************************
-;*reset_game 
+;* reset_game 
 ;
+; Sets the game to the original conditions
 ;*****************************************************************************************
 
 reset_game:
 	PUSH R0
 	PUSH R1
-	MOV R0, LINE
-	MOV R1, COLUMN
-	SHL R0, 8
-	OR R0, R1
-	MOV [SHIP_PLACE], R0
-	CALL reset_meteor_table
-	CALL reset_flags
+	MOV R0, LINE			; Stores ship initial position reference line
+	MOV R1, COLUMN			; Stores ship initial position reference column
+	SHL R0, 8			; Shifts ship line one byte to the left
+	OR R0, R1			; Adds to R0 the ship column
+	MOV [SHIP_PLACE], R0		; Stores in memory the initial position of the ship 
+	CALL reset_meteor_table 	; Resets all meteor table values
+	CALL reset_flags		; Resets all game flags
 	MOV R0, 0
-	MOV [MISSILE_PLACE], R0
+	MOV [MISSILE_PLACE], R0		; Allows a new missile to be shot when shoot_missile is called
 	POP R0
 	POP R1
 	RET
 
 
 ;*****************************************************************************************
-;*reset_meteor_table: 
+;* reset_meteor_table: 
 ;
+; Restores all of the meteor table values to the original ones
 ;*****************************************************************************************
 
 reset_meteor_table:
@@ -2000,18 +2006,18 @@ reset_meteor_table:
 	MOV R1, MAXIMUM_METEOR_NUMBER
 	MOV R0, 0
 	MOV R2, 1
-	MOV R8, METEOR_TABLE
+	MOV R8, METEOR_TABLE		; Stores METEOR_TABLE adress
 
 CLEAN_TABLE:
-	MOV [R8], R0
-	MOV [R8+2H], R0
-	MOV [R8+4H], R2
-	ADD R8 , NEXT_METEOR_VALUE
-	SUB R1, 1
-	JNZ CLEAN_TABLE
+	MOV [R8], R0			; Resets meteor position to 0
+	MOV [R8+2H], R0			; Resets meteor layout address to 0
+	MOV [R8+4H], R2			; Resets meteor steps to 1
+	ADD R8, NEXT_METEOR_VALUE	; Stores in R8 the next meteor position
+	SUB R1, 1			; Subtracts number of meteors by 1
+	JNZ CLEAN_TABLE			; Repeats cycle if the number of meteors is not 0
 
 RESET_METEOR_TABLE_END:
-	MOV [METEOR_NUMBER], R1
+	MOV [METEOR_NUMBER], R1		; Changes METEOR_NUMBER to 0
 	POP R8
 	POP R2
 	POP R1
@@ -2020,8 +2026,9 @@ RESET_METEOR_TABLE_END:
 	
 	
 ;*****************************************************************************************
-;*reset_flags: 
+;* reset_flags: 
 ;
+; Resets all game flags, setting them to 0
 ;*****************************************************************************************
 
 reset_flags:
@@ -2030,14 +2037,15 @@ reset_flags:
 	MOV [DELAY_COUNTER], R0
 	MOV [DELAY_FLAG], R0
 	MOV [EXISTS_COLLISION], R0
-	MOV [END_GAME_FLAG],R0
+	MOV [END_GAME_FLAG], R0
 	POP R0
 	RET
 
 
 ;*****************************************************************************************
-;*INTERRUPTIONS
+;* INTERRUPTIONS
 ;
+; Activates interruptions flags according to the clocks 
 ;*****************************************************************************************
 
 meteor_interruption:

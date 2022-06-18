@@ -1188,6 +1188,7 @@ DETERMINE_BAD_GOOD_COLLISION_END:
 explode_meteor:
 	PUSH R0
 	PUSH R1
+	PUSH R5
 	PUSH R8
 	PUSH R9
 	MOV R0, [SELECT_SCREEN]		; Stores current screen
@@ -1202,9 +1203,12 @@ explode_meteor:
 	MOV R9, [R8 + WORD_VALUE]	; Obtains meteor evolution table adress
 	MOV R9, [R9]			; Obtains meteor layout adress
 	CALL eliminate_meteor		; Erases meteor from screen and from METEOR_TABLE
+	MOV R5, 4	
+	MOV [PLAY_SOUND_VIDEO], R5	; Plays the meteor explosion sound
 	
 	POP R9
 	POP R8
+	POP R5
 	POP R1
 	POP R0
 	RET
@@ -1990,6 +1994,7 @@ end_game_menu:
 	MOV R2, 3
 	MOV [END_ALL_SOUND_VIDEO], R2	; Stops all videos and sounds playing
 	MOV [DEL_ALL_SCREENS], R2	; Deletes all pixels from all the screens
+	CALL 
 	MOV [START_SOUND_VIDEO], R2	; Plays end_game video 
 	
 END_GAME_CYCLE:
@@ -2007,7 +2012,28 @@ END_GAME_RETURN:
 	POP R1
 	POP R0
 	RET
-	
+
+;*****************************************************************************************
+;* determine_ending_video
+;
+; Determines the type of game over ( game over by energy , collision or button pressed)
+;*****************************************************************************************
+
+determine_ending_video:
+	PUSH R0
+	MOV R0, [DISPLAY_VALUE]
+	CMP R0, LOWER_BOUND
+	JZ ENERGY_END_SCREEN			; Jumps if the game was lost because of energy
+	MOV R2, 3				; Stores the "lost by collison" video
+	JMP DETERMINE_ENDING_VIDEO_RETURN
+
+ENERGY_END_SCREEN:
+	MOV R2, 5				; Stores the "lost by energy" video
+
+DETERMINE_ENDING_VIDEO_RETURN:
+	POP R0
+	RET
+
 	
 ;*****************************************************************************************
 ;* reset_game 

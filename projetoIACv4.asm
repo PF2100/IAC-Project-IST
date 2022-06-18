@@ -9,23 +9,23 @@
 
 
 
-WORD_VALUE		EQU 02H
+WORD_VALUE		EQU 02H		
 LOWER_BYTE_MASK		EQU 00FFH
 BYTE_VALUE		EQU 8
-FLAG_ON			EQU 1
-FLAG_OFF		EQU 0
-NO_VALUE		EQU FLAG_OFF
+FLAG_ON			EQU 1		; Value that determines a activated flag
+FLAG_OFF		EQU 0		; Value that determines a deactivated flag
+NO_VALUE		EQU FLAG_OFF	
 
-;****KEYPAD****************************************************************************
+;****KEYPAD****************************************************************************************************************
 INJECTED_LINE 		EQU BYTE_VALUE	; Initial keypad line (fourth)
 KEY_LIN 		EQU 0C000H	; Keyboard Rows
 KEY_COL 		EQU 0E000H	; Keyboard Columns
 KEY_MASK		EQU 0FH		; Isolates the lower nibble from the output of the keypad
 NO_BUTTON		EQU 0FFFFH	; Value of no pressed button
-GET_RANDOM_NUMBER	EQU 5
+GET_RANDOM_NUMBER	EQU 5		; Value that is used to Move the RANDOM_NUMBER from bits(7 to 4) into bits 2 to 0
 
 
-;****DISPLAY****************************************************************************
+;****DISPLAY***************************************************************************************************************
 
 DISPLAY			EQU 0A000H	; Display adress
 UPPER_BOUND		EQU 0064H	; Display upper bound (energy)
@@ -33,12 +33,12 @@ LOWER_BOUND		EQU 0000H	; Display lower bound (energy)
 DISPLAY_TIMER 		EQU 0100H	; Display delay between pressing button and changing energy value
 HEXTODEC_CONST		EQU 000AH	; Display hexadecimal to decimal constant
 DISPLAY_DECREASE	EQU -5		; Display decremente value 
-BAD_COLLISION_INCREASE	EQU 10
-GOOD_COLLISION_INCREASE EQU 15
-INITIAL_DISPLAY_VALUE	EQU 0100H
+BAD_COLLISION_INCREASE	EQU 10		; Display increase value when there is a missile-meteor collision
+GOOD_COLLISION_INCREASE EQU 15		; Display increase value when there is a ship-meteor collision
+INITIAL_DISPLAY_VALUE	EQU 0100H	; Display initial shown value
 
 
-;****KEYPAD COMMANDS*******************************************************************
+;****KEYPAD COMMANDS*********************************************************************************************************
 
 START			EQU 0CH		; Start game
 PAUSE			EQU 0DH		; Pause game
@@ -57,18 +57,16 @@ DEL_WARNING     	EQU 6040H	; Delete no background warning command adress
 DEL_ALL_SCREENS		EQU 6002H	; Delete all pixels drawn command adress
 DEL_SCREEN		EQU 6000H
 
-SELECT_FOREGROUND	EQU 6046H       ;
-DEL_FOREGROUND		EQU 6044H
+SELECT_FOREGROUND	EQU 6046H       ; Select a foreground command adress
+DEL_FOREGROUND		EQU 6044H	; Deletes froeground command adress
 SELECT_BACKGROUND 	EQU 6042H	; Select background command adress
 SELECT_SCREEN		EQU 6004H	; Select pixel screen
-SHOW_SCREEN		EQU 6006H	;
-HIDE_SCREEN		EQU 6008H	;
 
-PLAY_SOUND_VIDEO	EQU 605AH	;
-START_SOUND_VIDEO	EQU 605CH	;
-PAUSE_SOUND_VIDEO	EQU 605EH	;
-RESUME_SOUND_VIDEO	EQU 6060H
-END_ALL_SOUND_VIDEO	EQU 6068H
+PLAY_SOUND_VIDEO	EQU 605AH	; Plays a sound/video util its end
+START_SOUND_VIDEO	EQU 605CH	; Continously plays a sound/video
+PAUSE_SOUND_VIDEO	EQU 605EH	; Pauses a sound/video
+RESUME_SOUND_VIDEO	EQU 6060H	; Resumes the sound/video
+END_ALL_SOUND_VIDEO	EQU 6068H	; Ends all playing/paused videos/sounds
 
 
 ;***SCREEN*******************************************************************************************
@@ -85,8 +83,8 @@ MOV_TIMER		EQU 010H	; Movement delay definition
 
 LINE        		EQU 27        	; Ship initial line (bottom of the screen)
 COLUMN			EQU 30        	; Ship initial column (middle of the screen)
-WIDTH			EQU 5
-HEIGHT			EQU 4
+WIDTH			EQU 5		; Ship width
+HEIGHT			EQU 4		; Ship height
 WHITE			EQU 0FFFDH	; Hexadecimal ARGB value of the colour WHITE
 RED			EQU 0FE00H	; Hexadecimal ARGB value of the colour RED
 DARKRED			EQU 0FE33H	; Hexadecimal ARGB value of the colour DARKRED
@@ -95,29 +93,24 @@ BLUE			EQU 0F48FH	; Hexadecimal ARGB value of the colour BLUE
 
 ;***MISSILE****************************************************************************************************************
 
-MISSILE_WIDTH		EQU 1
-MISSILE_HEIGHT		EQU 1
-MISSILE_LINE		EQU 0
-MISSILE_COLUMN		EQU 0
-MISSILE_LINE_MAX	EQU 15
-MISSILE_COLOUR		EQU 0E8EFH
+MISSILE_WIDTH		EQU 1		; Missile width
+MISSILE_HEIGHT		EQU 1		; Missile height
+MISSILE_LINE_MAX	EQU 15		; Maximum line the missile can go
+MISSILE_COLOUR		EQU 0E8EFH	; Missile colour
 
 
 ;***METEORS*************************************************************************************************************
 
 METEOR_LINE		EQU 0		; Meteor initial line
-METEOR_HEIGHT		EQU 6H
-METEOR_WIDTH		EQU 6H
-METEOR_COLOUR		EQU 0 		; Hexadecimal value of the colour #
-MET_TIMER		EQU 0100H
-MAX_STEPS		EQU 13		; 
-MAX_METEOR_LINE		EQU 1FH
-NEXT_METEOR_VALUE	EQU 06H
-OBTAIN_STEPS		EQU 04H
-GOOD_COLLISION		EQU 1H
-BAD_COLLISION		EQU 0H
-MAXIMUM_METEOR_NUMBER 	EQU 4H
-NO_METEORS		EQU 0H
+MET_TIMER		EQU 0100H	; Meteor spawn timer
+MAX_STEPS		EQU 13		; Maximum number of steps until meteor stops changing layouts
+MAX_METEOR_LINE		EQU 1FH		; Maximum line a meteor can go
+NEXT_METEOR_VALUE	EQU 06H		; Value added to METEOR_TABLE to go from one meteor position to another
+OBTAIN_STEPS		EQU 04H		; Value added to METEOR_TABLE to obtain a meteor steps from its position
+GOOD_COLLISION		EQU 1H		; Value that refers to a good collision ( collision with ENERGY_BOLT)
+BAD_COLLISION		EQU 0H		; Value that refers to a bad collision ( collision with METEOR)
+MAXIMUM_METEOR_NUMBER 	EQU 4H		; Maximum number of meteors that can appear on screen
+NO_METEORS		EQU 0H		; Value that reffers to no meteors being on screen
 
 
 YELLOW 			EQU 0FFE0H
@@ -141,9 +134,9 @@ DEADORANGE		EQU 0FEA7H
 
 ;***RANDOM*************************************************************************************************************
 
-RANDOM_MAX		EQU 7
-MAX_METEOR_COLUMN	EQU 56
-COL_DETERM_VAL		EQU 8
+RANDOM_MAX		EQU 7		; Maximum Value the random number can achieve
+MAX_METEOR_COLUMN	EQU 56		; Maximum collumn a meteor can appear in
+COL_DETERM_VAL		EQU 8		; Value ADDED to the RANDOM number to obtain the meteor column
 
 
 ;*************************************************************************************************************************

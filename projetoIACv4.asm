@@ -6,9 +6,6 @@
 ; GROUP 13: João Trocado (103333), Pedro Freitas (103168), Tiago Firmino (103590)
 ;********************************************************************************************************
 
-
-
-
 WORD_VALUE		EQU 02H		
 LOWER_BYTE_MASK		EQU 00FFH
 BYTE_VALUE		EQU 8
@@ -112,7 +109,6 @@ BAD_COLLISION		EQU 0H		; Value that refers to a bad collision ( collision with M
 MAXIMUM_METEOR_NUMBER 	EQU 4H		; Maximum number of meteors that can appear on screen
 NO_METEORS		EQU 0H		; Value that reffers to no meteors being on screen
 
-
 YELLOW 			EQU 0FFE0H
 DARKYELLOW		EQU 0FFC1H
 ORANGE			EQU 0FF90H
@@ -160,7 +156,6 @@ DEF_OBJECT_FAR:				; Initial object layout
 DEF_OBJECT_CLOSER:			; Closer object layout
 	WORD 3, 3
 	WORD 0, CENTERGREY, 0, CENTERGREY, CENTERGREY, CENTERGREY, 0, CENTERGREY, 0
-	
 
 DEF_METEOR_SMALL:			; Small METEOR layout
 	WORD 4, 4
@@ -222,7 +217,6 @@ SHIP_PLACE:				; Reference to the position of ship
 	
 MISSILE_PLACE:				; Reference to the position of the missile 
 	BYTE 0H, 0H			; First byte of the word stores the line and the second one the column
-
 	
 CHANGE_COL:				; Stores column variation of the position of the object
 	WORD NO_VALUE
@@ -282,7 +276,6 @@ METEOR_TABLE:				; Table of all the meteor positions, meteor evolution tables an
 	
 	BYTE NO_VALUE, NO_VALUE 
 	WORD NO_VALUE, 1H
-	
 
 EXISTS_COLLISION:			; Flag that determines if there was a collision
 	WORD NO_VALUE
@@ -329,7 +322,7 @@ MAIN_CYCLE:
 
 
 ;********************************************************************************************************
-;* initial_screen
+;* initial_screen:
 ;
 ; Initializes the starting screen
 ;********************************************************************************************************		
@@ -359,9 +352,9 @@ INITIAL_SCREEN_LOOP:
 	
 
 ;********************************************************************************************************
-;* start_game
+;* start_game:
 ;
-; Starts the game 
+; Starts the game
 ;********************************************************************************************************
 
 start_game:
@@ -384,7 +377,7 @@ start_game:
 	RET
 	
 ;********************************************************************************************************
-;* build_ship
+;* build_ship:
 ;
 ; Draws ship in its original position
 ;********************************************************************************************************
@@ -408,7 +401,7 @@ build_ship:
 	
 
 ;***********************************************************************************************************
-;* commands
+;* commands:
 ;
 ; Pauses the game or ends the game according to the button pressed and/or if the END_GAME_FLAG is activated
 ;***********************************************************************************************************
@@ -449,7 +442,7 @@ COMMANDS_END:
 
 
 ;********************************************************************************************************
-;* pause_menu
+;* pause_menu:
 ;
 ; Loop cycle until PAUSE button is pressed again
 ;********************************************************************************************************
@@ -496,7 +489,7 @@ PAUSE_END:
 	
 	
 ;********************************************************************************************************
-;* mov_ship
+;* mov_ship:
 ;
 ; Moves ship position (accordingly to its delay) if the button pressed is either LEFT or RIGHT
 ;********************************************************************************************************
@@ -553,7 +546,7 @@ SHIP_END:
 		
 
 ;***************************************************************************************************************************
-;*mov_missile
+;* mov_missile:
 ;
 ; Shoots a missile (if the pressed Button is SHOOT) and moves the missile upwards if MISSILE_INTERRUPTION_FLAG is activated
 ;***************************************************************************************************************************
@@ -604,7 +597,7 @@ MOV_MISSILE_END:
 	
 	
 ;********************************************************************************************************
-;* shoot_missile
+;* shoot_missile:
 ;
 ; Shoots a missile if there isnt one flying already
 ;********************************************************************************************************
@@ -648,7 +641,7 @@ SHOOT_MISSILE_END:
 	
 	
 ;********************************************************************************************************
-;*check_missile_limits
+;* check_missile_limits:
 ;
 ; Checks if missile has reached either the MISSILE_LINE_MAX value or if there is a collision
 ;
@@ -678,12 +671,12 @@ CHECK_MISSILE_LIMITS_END:
 	
 	
 ;********************************************************************************************************
-;* mov_object_vertically
+;* mov_object_vertically:
 ;
 ; Moves a object vertically based on CHANGE_LINE value
 ;
-; INPUT: R8 - Object Reference position 
-;	 R9 - Object Layout
+; INPUT: 	R8 - Object Reference position 
+;		 R9 - Object Layout
 ;********************************************************************************************************		
 
 mov_object_vertically:
@@ -705,7 +698,7 @@ MOV_OBJECT_VERTICALLY_END:
 
 
 ;********************************************************************************************************
-;* create_met
+;* create_met:
 ;
 ; Creates a meteor if MET_TIMER value is reached
 ;********************************************************************************************************
@@ -746,7 +739,7 @@ CREATE_MET_END:
 	
 	
 ;********************************************************************************************************
-;*store_build_meteor
+;* store_build_meteor:
 ;
 ; Build a meteor and store it in METEOR_TABLE
 ;********************************************************************************************************
@@ -792,7 +785,7 @@ STORE_BUILD_METEOR_END:
 
 
 ;********************************************************************************************************
-;* random_met_place
+;* random_met_place:
 ;
 ; Chooses the meteor column randomly (8 possible columns, columns 8 to 56)
 ;
@@ -831,7 +824,7 @@ RANDOM_PLACE_END:
 	
 
 ;****************************************************************************************************************
-;* random_met_type
+;* random_met_type:
 ;
 ; Chooses the meteor type randomly (25% chance to be GOOD_METEOR [0 or 1], 75% chance to be BAD_METEOR [2 to 7])
 ; 
@@ -867,7 +860,7 @@ RANDOM_TYPE_END:
 	
 	
 ;********************************************************************************************************
-;*move_meteors
+;* move_meteors:
 ;
 ; Moves all the meteors from the METEOR_TABLE if METEOR_INTERRUPTION_FLAG value is 1
 ;********************************************************************************************************
@@ -930,7 +923,7 @@ MOVE_MET_END:
 
 
 ;********************************************************************************************************
-;*clean_explosions
+;* clean_explosions:
 ;
 ; Deletes all destroyed meteors from screen number 5
 ; 
@@ -947,11 +940,11 @@ CLEAN_EXPLOSION_END:
 	
 	
 ;****************************************************************************************************************
-;*move_meteor
+;* move_meteor:
 ;
 ; Moves a meteor, checks its collisions, limits and modifies its layout based on the amount of steps it has taken	
 ;
-; INPUT: R8 - METEOR_TABLE
+; INPUT: 	R8 - METEOR_TABLE
 ;****************************************************************************************************************
 
 move_meteor:
@@ -998,8 +991,9 @@ MOVE_METEOR_END:			; Ends routine
 
 
 ;********************************************************************************************************
-;* check_ship_collision
-;  Checks if a collision between the ship and a meteor has occured
+;* check_ship_collision:
+;
+; Checks if a collision between the ship and a meteor has occured
 ;
 ; INPUT:	R8 - METEOR_TABLE
 ;		R9 - Meteor layout address
@@ -1041,7 +1035,7 @@ CHECK_SHIP_COLLISION_END:
 	
 	
 ;********************************************************************************************************
-;* check_missile_collision
+;* check_missile_collision:
 ;
 ; Checks if a collision between a missile and a meteor has occured
 ;
@@ -1085,7 +1079,7 @@ DETECT_MISSILE_COLLISION_END:
 
 
 ;********************************************************************************************************
-;* treat_ship_meteor_collisions
+;* treat_ship_meteor_collisions:
 ;
 ; Takes care of collisions between the ship and a meteor based on COLLISION_TYPE
 ;
@@ -1120,7 +1114,7 @@ TREAT_SHIP_METEOR_COLLISIONS_END:
 
 
 ;********************************************************************************************************
-;* treat_missile_meteor_collisions
+;* treat_missile_meteor_collisions:
 ;
 ; Takes care of collisions between a missile and a meteor based on COLLISION_TYPE
 ;
@@ -1151,7 +1145,7 @@ TREAT_MISSILE_METEOR_COLLISIONS_END:
 
 
 ;********************************************************************************************************
-;* determine_bad_good_collision
+;* determine_bad_good_collision:
 ;
 ; Determines the collision type (good or bad meteor collision)
 ;********************************************************************************************************	

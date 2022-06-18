@@ -1994,7 +1994,7 @@ end_game_menu:
 	MOV R2, 3
 	MOV [END_ALL_SOUND_VIDEO], R2	; Stops all videos and sounds playing
 	MOV [DEL_ALL_SCREENS], R2	; Deletes all pixels from all the screens
-	CALL 
+	CALL determine_ending_video
 	MOV [START_SOUND_VIDEO], R2	; Plays end_game video 
 	
 END_GAME_CYCLE:
